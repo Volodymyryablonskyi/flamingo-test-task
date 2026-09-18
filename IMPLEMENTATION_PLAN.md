@@ -64,12 +64,23 @@ tools cover all of it. Two are genuinely useful, both optional:
 Explicitly **not** needed: GitHub MCP (`gh` suffices), filesystem MCP (built-in tools), any
 HTTP/database MCP.
 
-### 2.5 Phase 0 exit criteria
+### 2.5 Phase 0 exit criteria — ✅ COMPLETE (commits `190a70e`, `4e6bdfb`)
 
-- [ ] `java -version` and `mvn -version` agree on JDK 21; `JAVA_HOME` resolves
-- [ ] `git status` works inside the project
-- [ ] `src/Main.java` (IntelliJ scratch class) deleted; PDF moved to `docs/`
-- [ ] `.gitignore` extended: `target/`, `allure-results/`, `allure-report/`, `.env`, `*.local.properties`, `test-output/`
+- [x] `java -version` and `mvn -version` agree on JDK 21; `JAVA_HOME` set to `C:\Program Files\Java\jdk-21`
+- [x] `git status` works inside the project — repo initialised on `main`
+- [x] `src/Main.java` deleted; `flamingo-test-task.iml` deleted (replaced by `pom.xml`); PDF moved to `docs/` and the emoji stripped from its filename
+- [x] `.gitignore` extended: `target/`, `allure-results/`, `allure-report/`, `.env`, `*.local.properties`, `test-output/`, traces/screenshots
+- [x] `.gitattributes` added — `eol=lf` normalisation for the Ubuntu CI runner
+- [x] GitHub CLI **2.101.0** installed; Playwright MCP registered and connected
+- [x] Playwright **Chromium 153.0.8010.12** (build v1243) installed
+- [x] `pom.xml` validates; all dependencies resolved at the pinned versions
+- [x] `ToolchainSmokeTest` green (3/3) — Lombok, AssertJ, REST Assured and a real Chromium launch all verified
+- [x] `mvn allure:report` renders successfully
+- [x] `-Dgroups="smoke"` runs 3; `-Dgroups="api"` runs 0 **without failing the build**
+
+> ⚠️ **IntelliJ re-import required.** The plain-Java `.iml` module was removed. Open
+> `pom.xml` and choose *Add as Maven Project* (or File → Open → select `pom.xml`) so the IDE
+> picks up the Maven structure and the test classpath.
 
 ---
 
@@ -545,6 +556,20 @@ Probed live on **2026-09-18**. Re-verify if implementation starts more than a fe
 · `allure-maven` 2.x **2.18.0** · `aspectjweaver` **1.9.25** · `datafaker` **2.7.0** ·
 `maven-surefire-plugin` **3.6.0** · `maven-surefire-report-plugin` **3.6.0** ·
 `exec-maven-plugin` **3.6.4** · `slf4j-simple` **2.0.19**.
+
+### 11.1b Build-time findings (discovered during Phase 0 — README "Challenges" material)
+
+Three things only surfaced once the build actually ran. All are fixed in `pom.xml`:
+
+| Finding | Symptom | Fix |
+|---|---|---|
+| **Allure library and report renderer are versioned independently** | `mvn allure:report` → `Can't install allure: Cannot resolve allure commandline dependencies … allure-commandline:zip:2.35.5 (absent)`. The Java library is 2.35.5; `allure-commandline` is at **2.46.1** and has no 2.35.5 release at all | Separate `allure.report.version` property; `<reportVersion>` points at it, not at the library version |
+| **`allure-junit5` was renamed to `allure-jupiter`** in Allure 2.35.x | Build succeeds but warns *"has been relocated"* twice per run | Use the `allure-jupiter` coordinate directly |
+| **`maven-compiler-plugin` 3.14.2 does not exist** | `go-offline` fails; the failure is then *cached* locally and not retried until the update interval elapses — needs `-U` to recover | Pinned to the real latest, **3.16.0**. Latest stable line: 3.13.0 → 3.14.0 → 3.14.1 → 3.15.0 → 3.16.0 |
+
+Verified working afterwards: `mvn clean test` 3/3 green · `mvn allure:report` renders ·
+`-Dgroups="smoke"` runs 3 · `-Dgroups="api"` runs 0 without failing (thanks to
+`failIfNoSpecifiedTests=false`, which matters for the CI matrix job).
 
 ### 11.2 Live service contracts
 
