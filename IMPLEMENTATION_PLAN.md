@@ -9,6 +9,20 @@
 > Every version number, HTTP contract and error shape below was **verified against the live
 > services**, not recalled — the ✅ markers point at the evidence in §11.
 
+> ### ▶ Resume point — last updated 2026-09-18
+>
+> **Phase 0 is COMPLETE** (§2.5). Build is green: `mvn clean test` → 3/3, `mvn allure:report`
+> renders, tag filtering verified. 3 commits on `main`, working tree clean.
+>
+> **No git remote is configured and nothing has been pushed yet.**
+>
+> **Next: Phase 1** — `Config` / `ConfigLoader` (§3.4) plus the `BaseApiTest` / `BaseUiTest`
+> base classes; then Phase 2 (REST CRUD). Work the §9 roadmap in order; each phase ends in a
+> green build plus the commit message drafted in that table.
+>
+> Outstanding manual steps for the user: re-import the project in IntelliJ as a Maven project
+> (the old `.iml` was deleted), and run `gh auth login` before the repo can be created.
+
 ---
 
 ## 1. At a glance
