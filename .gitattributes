@@ -1,0 +1,11 @@
+# Normalise line endings so the Windows dev machine and the Ubuntu CI runner
+# produce identical blobs. Without this, every file shows as modified in CI.
+* text=auto eol=lf
+
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+*.pdf binary
+*.png binary
+*.jpg binary
+*.zip binary
