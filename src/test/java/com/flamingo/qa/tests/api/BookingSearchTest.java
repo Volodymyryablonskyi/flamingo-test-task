@@ -45,7 +45,7 @@ class BookingSearchTest extends BaseRestTest {
 
         List<Integer> ids = unauthenticatedBookingClient.findByGuestName(guest.firstname(), lastname)
                 .verify().hasStatusCode(STATUS_200_OK)
-                .and().asListOfField("bookingid", Integer.class);
+                .and().asListAt("bookingid", Integer.class);
 
         assertThat(ids)
                 .as("search for %s %s", guest.firstname(), lastname)
@@ -60,7 +60,7 @@ class BookingSearchTest extends BaseRestTest {
         List<Integer> ids = unauthenticatedBookingClient
                 .findByGuestName("Nobody", BookingDataGenerator.uniqueLastName())
                 .verify().hasStatusCode(STATUS_200_OK)
-                .and().asListOfField("bookingid", Integer.class);
+                .and().asListAt("bookingid", Integer.class);
 
         assertThat(ids).isEmpty();
     }

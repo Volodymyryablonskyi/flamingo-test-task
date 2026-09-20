@@ -11,18 +11,18 @@
 
 > ### ▶ Resume point — last updated 2026-09-20
 >
-> **Phases 0–4 are COMPLETE**, on the `spribe_api_test` / `avenga-api-test` architecture
-> (§3.2). Build is green: `mvn clean test` → **23/23**; `-Dgroups=api` → 23 (GraphQL carries
-> both tags), `-Dgroups=graphql` → 4, `-Dgroups=smoke` → 6. 13 commits on `main`, working
+> **Phases 0–5 are COMPLETE**, on the `spribe_api_test` / `avenga-api-test` architecture
+> (§3.2). Build is green: `mvn clean test` → **27/27**; `-Dgroups=graphql` → 8. All API work
+> is done: 19 REST + 8 GraphQL, against minimums of 3 and 5. 15 commits on `main`, working
 > tree clean.
 >
 > **No git remote is configured and nothing has been pushed yet.**
 >
-> **Next: Phase 5** — the four GraphQL negative tests (§6.2/5–8) against the error contracts
-> measured in §11.2: non-existent id → 200 with `data.character: null` and no `errors`;
-> malformed query and unknown field → **400**. Re-confirm the malformed-query message before
-> asserting on its text (§11.2 note). Work the §9 roadmap in order; each phase ends in a
-> green build plus a commit.
+> **Next: Phase 6** — the UI framework: `PlaywrightExtension` (browser/context/page
+> lifecycle), `BasePage`, `BrowserFactory`, `AdBlocker` and failure capture, ending with one
+> smoke test that navigates DemoQA headless. Page objects go in `src/main/java/com/flamingo/qa/ui/`,
+> UI tests in `src/test/java/com/flamingo/qa/tests/ui/`. Work the §9 roadmap in order; each
+> phase ends in a green build plus a commit.
 >
 > Outstanding manual steps for the user: re-import the project in IntelliJ as a Maven project
 > (the old `.iml` was deleted), and run `gh auth login` before the repo can be created.
@@ -434,9 +434,9 @@ in `@AfterEach`, tolerating 404 in case the service reset mid-run. Tests 3 and 8
 | 3 | `shouldPaginateUsingGraphQlVariables` | P0 | + | `$page: Int!` **as a variable**; asserts page 2 ∩ page 1 = ∅ |
 | 4 | `shouldResolveNestedFieldsAcrossTypesUsingFragment` | P0 | + | `character { ...CharacterSummary episode { id name } }` |
 | 5 | `shouldReturnNullDataForNonExistentId` | P0 | − | asserts the **measured** shape: 200, `data.character == null`, `errors` absent |
-| 6 | `shouldReturnSyntaxErrorForMalformedQuery` | P1 | − | **400**, `errors[].message`, `data` absent |
+| 6 | `shouldReturnSyntaxErrorForMalformedQuery` | P1 | − | **400**, `errors[].message` non-blank, `data` absent. Text not pinned: the rejection comes from the **Stellate CDN**, not the GraphQL server (§11.2) |
 | 7 | `shouldReturnValidationErrorForUnknownField` | P1 | − | **400**, exact message + `extensions.code` |
-| 8 | `shouldReturnErrorWhenRequiredVariableIsMissing` | P2 | − | ✅ verified: `Variable "$id" of required type "ID!" was not provided.` |
+| 8 | `shouldReturnErrorWhenRequiredVariableIsMissing` | P2 | − | ✅ exact spec wording asserted; `extensions.code` is **`INTERNAL_SERVER_ERROR`** — a mislabelled validation failure (§11.2) |
 
 ### 6.3 UI — DemoQA (`@Tag("ui")`)
 
@@ -528,7 +528,7 @@ development process" is satisfied structurally, not retroactively. ~8.5 h.
 | **2b** ✅ | Comment trim, dead-class removal, then the §3.2 architecture move | ✅ 24/24 green, no build warnings; `-Dgroups=api` → 10 | 1.0 h | `refactor: adopt the spribe/avenga framework architecture` |
 | **3** ✅ | REST negative + data-driven (9–10) | ✅ 19 API tests green; `@ParameterizedTest` wired to `testdata/guest-name-cases.json` | 0.5 h | `test(api): add negative and data-driven booking scenarios` |
 | **4** ✅ | GraphQL client + positive (1–4) | ✅ 4 tests green; variables passed as a map; queries in `.graphql` files | 1.0 h | `test(graphql): add graphql client and positive query coverage` |
-| **5** | GraphQL negative (5–8) | 8 GraphQL tests green against the **measured** contracts in §11.2 | 0.5 h | `test(graphql): assert error contracts for invalid queries` |
+| **5** ✅ | GraphQL negative (5–8) | ✅ 8 GraphQL tests green against the **measured** contracts in §11.2, two of which the Phase 5 re-probe corrected | 0.5 h | `test(graphql): assert error contracts for invalid queries` |
 | **6** | UI framework | `PlaywrightExtension`, `BasePage`, `BrowserFactory`, `AdBlocker`, failure capture; one smoke test navigates DemoQA headless | 1.0 h | `feat(ui): add playwright page-object framework with failure capture` |
 | **7** | UI tests (1–9) | 9 UI tests green headless **and** headed; zero `Thread.sleep`; screenshot verified on an **induced** failure | 2.0 h | `test(ui): cover practice form and web tables via page objects` |
 | **8** | Reporting + parallelism | `mvn allure:serve` shows request/response + screenshot attachments; 3 consecutive parallel runs stable | 0.5 h | `ci: enable allure reporting and parallel execution` |
@@ -714,15 +714,32 @@ i.e. the §11.1f token fix firing and keeping the suite green. Two consequences 
 |---|---|
 | `characters(page:1){info{count} results{id name episode{id name}}}` | `200` · `count: 826`, nested episodes resolved |
 | `character(id:"999999")` | **`200`** · `{"data":{"character":null}}`, no `errors` |
-| truncated query | **`400`** |
-| unknown field `nopeNotAField` | **`400`** · `Cannot query field "nopeNotAField" on type "Character".` · `extensions.code: GRAPHQL_VALIDATION_FAILED` |
-| `$id: ID!` declared but not supplied | **`400`** · `Variable "$id" of required type "ID!" was not provided.` |
+| truncated query | **`400`** · see the correction below |
+| unknown field `nopeNotAField` | **`400`** · `Cannot query field "nopeNotAField" on type "Character".` · `extensions.code: GRAPHQL_VALIDATION_FAILED` · `locations` present |
+| `$id: ID!` declared but not supplied | **`400`** · `Variable "$id" of required type "ID!" was not provided.` · `extensions.code:` **`INTERNAL_SERVER_ERROR`** |
 
 `https://countries.trevorblades.com/graphql` also responded `200` — a second fallback if needed.
 
-> Note: the malformed-query body was not captured cleanly by the probe (status `400` confirmed,
-> body empty in the transcript). Confirm the exact `errors[].message` in Phase 5 before
-> asserting on its text; assert on status + `errors` non-empty if the message proves unstable.
+> **Resolved in Phase 5 — and the message is not what was assumed.** The full body is:
+>
+> ```json
+> {"errors":[{"message":"The request did not contain a valid GraphQL request.  Batch queries
+> and APQ request are not currently supported for this API. Please ensure that your request
+> contains a valid query and try again.","extensions":{"stellate":{"code":"INVALID_QUERY"}}}]}
+> ```
+>
+> That is **not a GraphQL syntax error**. The document is rejected by the **Stellate CDN**
+> sitting in front of the API, before it ever reaches the GraphQL server — hence the nested
+> `extensions.stellate.code` instead of a standard `extensions.code`. The wording belongs to
+> an edge provider that can change it at will, so the test asserts status `400`, absence of
+> `data`, and a non-blank `errors[0].message`, and does **not** pin the text. The brief's
+> requirement ("assert `errors[].message` and absence of `data`") is met exactly.
+>
+> Second correction: a **missing required variable** carries
+> `extensions.code: INTERNAL_SERVER_ERROR`. That is the same class of failure as the
+> unknown-field case, which correctly reports `GRAPHQL_VALIDATION_FAILED` — so the API
+> labels one of two identical validation failures a server error. Asserted as measured and
+> flagged as a defect, the same way the Restful Booker 500 is.
 
 ### 11.3 DemoQA
 

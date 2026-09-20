@@ -1,0 +1,5 @@
+query MalformedQuery {
+    characters(page: 1) {
+        results {
+            id
+            name

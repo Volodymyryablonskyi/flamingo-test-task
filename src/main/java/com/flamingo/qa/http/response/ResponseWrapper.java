@@ -51,8 +51,8 @@ public final class ResponseWrapper {
         return response.jsonPath();
     }
 
-    /** For a list-of-objects body where one field is wanted, e.g. {@code [{"bookingid":1}]}. */
-    public <T> List<T> asListOfField(String jsonPath, Class<T> type) {
+    /** Maps a JSON array at a path onto a list, e.g. {@code errors} or {@code bookingid}. */
+    public <T> List<T> asListAt(String jsonPath, Class<T> type) {
         return response.jsonPath().getList(jsonPath, type);
     }
 

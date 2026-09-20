@@ -38,12 +38,6 @@ public class GraphQlApiClient extends BaseApiClient<GraphQlEndpoints> {
         return query(document, Map.of());
     }
 
-    /** For negative cases, where the document is the thing under test and may be invalid. */
-    @Step("Run a raw GraphQL query")
-    public ResponseWrapper queryRaw(String query, Map<String, Object> variables) {
-        return send(GraphQlRequest.builder().query(query).variables(variables).build());
-    }
-
     private ResponseWrapper send(GraphQlRequest request) {
         return request(HttpMethod.POST, endpoints.getQueryUri(), request);
     }
