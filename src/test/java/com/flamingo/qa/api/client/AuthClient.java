@@ -10,23 +10,18 @@ import io.restassured.response.Response;
 import static io.restassured.RestAssured.given;
 
 /**
- * {@code POST /auth}.
- *
- * <p>Restful Booker answers <strong>HTTP 200 for a rejected login</strong>, with
- * {@code {"reason":"Bad credentials"}} in the body. That is unusual enough that the client
- * never infers success from the status code - callers ask {@link AuthResponse#isSuccessful()}.
+ * {@code POST /auth}. Restful Booker answers a rejected login with HTTP 200 and
+ * {@code {"reason":"Bad credentials"}}, so success is read from the body, never the status.
  */
 public class AuthClient {
 
     private static final String AUTH_PATH = "/auth";
 
-    /** The typed body. Use this when the outcome is the subject of the assertion. */
     @Step("Request an auth token for user \"{username}\"")
     public AuthResponse requestToken(String username, String password) {
         return response(username, password).as(AuthResponse.class);
     }
 
-    /** The raw response, for tests that assert on the status code or headers themselves. */
     @Step("Request an auth token for user \"{username}\" (raw response)")
     public Response response(String username, String password) {
         return TransientFailureRetry.send(() -> given()

@@ -8,10 +8,7 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.time.LocalDate;
 
-/**
- * The check-in / check-out pair. Modelled as {@link LocalDate} rather than {@code String}
- * so a test can say {@code checkIn.plusDays(3)} instead of formatting dates by hand.
- */
+/** {@link LocalDate} rather than String, so a test can say {@code checkIn.plusDays(3)}. */
 @Value
 @Builder
 @Jacksonized

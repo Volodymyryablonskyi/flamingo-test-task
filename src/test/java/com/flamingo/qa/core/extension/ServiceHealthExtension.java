@@ -15,18 +15,12 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Skips a test class, with a reason, when a system it declares via {@link RequiresService}
- * is unreachable.
+ * Skips a class, with a reason, when a system it declares via {@link RequiresService} is
+ * unreachable. These are free public demo services; turning someone else's downtime into a
+ * wall of red assertion failures destroys the signal in the report.
  *
- * <p>Rationale: Restful Booker is a free Heroku dyno that cold-starts and is periodically
- * reset, and DemoQA is a public demo site. Turning their downtime into a wall of red
- * assertion failures destroys the signal in the report - a skip labelled
- * "Restful Booker is not reachable" is honest and immediately actionable. The brief
- * explicitly sanctions this ("If a service is temporarily down, document it").
- *
- * <p>Each system is probed <strong>once per JVM</strong>, not once per class: the probes
- * run before every API and UI class, and hammering a public service with health checks
- * would be exactly the overloading the brief asks us to avoid.
+ * <p>Probed once per JVM rather than once per class, since the probes run ahead of every
+ * API and UI class.
  */
 public class ServiceHealthExtension implements BeforeAllCallback {
 
@@ -40,7 +34,7 @@ public class ServiceHealthExtension implements BeforeAllCallback {
         for (SystemUnderTest system : requiredSystems(context)) {
             // Present == unhealthy, and carries the reason shown in the report.
             PROBE_RESULTS.computeIfAbsent(system, ServiceHealthExtension::probe)
-                    .ifPresent(reason -> Assumptions.abort(reason));
+                    .ifPresent(Assumptions::abort);
         }
     }
 
@@ -51,7 +45,7 @@ public class ServiceHealthExtension implements BeforeAllCallback {
                 .orElse(new SystemUnderTest[0]);
     }
 
-    /** @return the reason the system is unusable, or empty when it is healthy */
+    /** @return why the system is unusable, or empty when it is healthy */
     private static Optional<String> probe(SystemUnderTest system) {
         String url = system.url();
         // Not try-with-resources: HttpClient only became AutoCloseable in Java 21 and this
@@ -68,8 +62,8 @@ public class ServiceHealthExtension implements BeforeAllCallback {
                 return Optional.empty();
             }
             return Optional.of(system.displayName() + " health check on " + url
-                    + " returned HTTP " + response.statusCode()
-                    + " - skipping these tests rather than reporting someone else's outage as a failure.");
+                    + " returned HTTP " + response.statusCode() + " - skipping rather than"
+                    + " reporting someone else's outage as a failure.");
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -77,7 +71,7 @@ public class ServiceHealthExtension implements BeforeAllCallback {
         } catch (Exception e) {
             return Optional.of(system.displayName() + " is not reachable at " + url
                     + " (" + e.getClass().getSimpleName() + ": " + e.getMessage() + ")"
-                    + " - skipping these tests rather than reporting someone else's outage as a failure.");
+                    + " - skipping rather than reporting someone else's outage as a failure.");
         }
     }
 

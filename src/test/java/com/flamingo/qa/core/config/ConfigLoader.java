@@ -2,27 +2,17 @@ package com.flamingo.qa.core.config;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Locale;
 import java.util.Properties;
 import java.util.function.UnaryOperator;
 
 /**
- * Resolves a configuration key against three sources, first hit wins:
+ * Resolves a key against a system property, then {@code API_BASE_URL}-style environment
+ * variable, then {@code config.properties}; a key that resolves nowhere throws instead of
+ * returning null.
  *
- * <ol>
- *   <li>a system property - {@code -Dapi.base.url=...}, for ad-hoc local overrides;</li>
- *   <li>an environment variable - {@code API_BASE_URL}, how CI overrides things;</li>
- *   <li>{@code config.properties} on the test classpath - the committed defaults.</li>
- * </ol>
- *
- * <p>A key that is missing from all three is a configuration bug, not a {@code null} to be
- * propagated: {@link #get(String)} throws immediately and names the key, so the failure
- * surfaces where it can be fixed rather than as an NPE inside a request builder.
- *
- * <p>The environment-variable name is derived mechanically - upper-case, dots to
- * underscores - so there is no mapping table to keep in sync.
- *
- * <p>The lookup functions are injected rather than called statically so the precedence
- * chain itself is unit-testable; production code uses {@link #instance()}.
+ * <p>The lookups are injected so the precedence chain is unit-testable - a JVM cannot set
+ * its own environment variables.
  */
 public final class ConfigLoader {
 
@@ -47,9 +37,6 @@ public final class ConfigLoader {
         return INSTANCE;
     }
 
-    /**
-     * @throws ConfigurationException if the key resolves nowhere
-     */
     public String get(String key) {
         String value = resolve(key);
         if (value == null) {
@@ -71,11 +58,7 @@ public final class ConfigLoader {
         }
     }
 
-    /**
-     * Strict on purpose: a typo such as {@code ui.headless=ture} silently means
-     * {@code false} to {@link Boolean#parseBoolean}, which would quietly open a browser
-     * window on a CI runner.
-     */
+    /** Strict: {@code Boolean.parseBoolean} reads a typo like {@code ture} as false. */
     public boolean getBoolean(String key) {
         String value = get(key).trim();
         if ("true".equalsIgnoreCase(value)) {
@@ -102,7 +85,7 @@ public final class ConfigLoader {
     }
 
     static String environmentVariableName(String key) {
-        return key.toUpperCase(java.util.Locale.ROOT).replace('.', '_');
+        return key.toUpperCase(Locale.ROOT).replace('.', '_');
     }
 
     private static boolean isPresent(String value) {

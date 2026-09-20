@@ -5,23 +5,16 @@ import com.flamingo.qa.core.config.Config;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
-/**
- * The external systems this suite exercises, each with the cheapest probe that proves it
- * is reachable and serving.
- *
- * <p>The URL is a {@link Supplier} rather than a constant so the probe follows whatever
- * {@link Config} resolves at runtime - point {@code graphql.url} at a different schema and
- * the health check follows it.
- */
+/** The external systems the suite exercises, each with the cheapest probe that proves it is serving. */
 public enum SystemUnderTest {
 
-    /** Restful Booker answers its health endpoint with 201 Created, not 200. */
+    /** Restful Booker answers its health endpoint with 201, not 200. */
     RESTFUL_BOOKER("Restful Booker",
             () -> Config.apiBaseUrl() + "/ping",
             null,
             status -> status == 201 || status == 200),
 
-    /** {@code __typename} is the smallest query every GraphQL schema can answer. */
+    /** {@code __typename} is the smallest query any GraphQL schema can answer. */
     GRAPHQL("GraphQL API",
             Config::graphqlUrl,
             "{\"query\":\"{__typename}\"}",
@@ -33,6 +26,7 @@ public enum SystemUnderTest {
             status -> status == 200);
 
     private final String displayName;
+    /** A supplier, not a constant, so the probe follows whatever Config resolves at runtime. */
     private final Supplier<String> url;
     private final String postBody;
     private final IntPredicate healthy;

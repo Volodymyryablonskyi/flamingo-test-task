@@ -9,11 +9,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Declares which external systems a test class needs. If one is unreachable the class is
- * <em>skipped with a reason</em> rather than failed - these are public demo services, and
- * a red suite caused by someone else's downtime carries no information.
- *
- * <p>{@link Inherited} so a base class can declare it once for every subclass.
+ * Declares which external systems a test class needs, so an unreachable one skips the class
+ * with a reason instead of failing it. {@link Inherited} so a base class declares it once.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)

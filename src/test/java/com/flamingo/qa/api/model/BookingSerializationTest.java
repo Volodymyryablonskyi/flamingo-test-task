@@ -1,10 +1,10 @@
 package com.flamingo.qa.api.model;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.flamingo.qa.api.model.booking.Booking;
 import com.flamingo.qa.api.model.booking.BookingDates;
 import com.flamingo.qa.api.model.booking.BookingResponse;
 import com.flamingo.qa.core.util.Json;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -15,11 +15,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Pins the mapping between the Lombok models and the JSON Restful Booker actually speaks.
- *
- * <p>Worth its own test because the failure mode is silent: a Lombok {@code @Builder}
- * without {@code @Jacksonized} deserialises to an object with every field null, and a
- * mismatched property name nulls one field. Either way nothing throws - it surfaces later
- * as an assertion comparing "Jim" to null, several layers from the cause.
+ * Worth its own test because the failure mode is silent: a builder Jackson cannot see
+ * yields an object with every field null, and nothing throws.
  *
  * <p>The literal below is a real response body, captured from the live API.
  */
@@ -68,7 +65,7 @@ class BookingSerializationTest {
 
         String json = Json.mapper().writeValueAsString(booking);
 
-        // Compared as trees rather than strings: key order and whitespace are not contract.
+        // Compared as trees: key order and whitespace are not contract.
         assertThat(Json.mapper().readTree(json))
                 .isEqualTo(Json.mapper().readTree(LIVE_RESPONSE_BODY));
     }

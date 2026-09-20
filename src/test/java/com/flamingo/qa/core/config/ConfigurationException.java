@@ -1,9 +1,6 @@
 package com.flamingo.qa.core.config;
 
-/**
- * Thrown when configuration is missing or malformed. Unchecked by design: there is no
- * meaningful recovery from a misconfigured suite, and the message always names the key.
- */
+/** Configuration is missing or malformed. Unchecked: there is no recovery from it. */
 public class ConfigurationException extends RuntimeException {
 
     public ConfigurationException(String message) {

@@ -9,14 +9,11 @@ import lombok.extern.jackson.Jacksonized;
 /**
  * A Restful Booker booking.
  *
- * <p>{@code @Value @Builder} gives immutability and readable construction;
- * <strong>{@code @Jacksonized} is not optional</strong> - without it Jackson cannot see the
- * Lombok builder, so deserialisation silently yields an object with every field null and
- * the failure surfaces as a confusing assertion mismatch rather than a mapping error.
+ * <p>{@code @Jacksonized} is not optional: without it Jackson cannot see the Lombok builder
+ * and deserialises every field to null, silently.
  *
- * <p>The API names its fields in run-together lower case ({@code totalprice},
- * {@code additionalneeds}). Rather than scatter {@code @JsonProperty} over every field, one
- * naming strategy states that convention once and the Java side keeps idiomatic camelCase.
+ * <p>The naming strategy expresses the API's run-together lower case ({@code totalprice},
+ * {@code additionalneeds}) once, instead of a {@code @JsonProperty} on every field.
  */
 @Value
 @Builder(toBuilder = true)

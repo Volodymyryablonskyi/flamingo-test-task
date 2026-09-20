@@ -23,24 +23,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Proves the two transport-level guarantees the rest of the suite leans on: the configured
- * socket timeout is really in force, and a transport failure is really retried.
+ * Pins the two transport guarantees the rest of the suite leans on: the configured socket
+ * timeout is in force, and a transport failure is really retried.
  *
- * <p>Both were written after a live run in which one request to a stalled Heroku dyno hung
- * for <strong>six minutes</strong>. The investigation turned up two real defects, neither
- * visible by reading the code: a read timeout arrives as a <em>checked</em>
- * {@link SocketTimeoutException} thrown through REST Assured's Groovy internals, so a
- * {@code catch (RuntimeException)} never saw it; and retrying from inside a REST Assured
- * {@code Filter} cannot work at all, because {@code FilterContext.next()} walks a
- * single-use iterator and answers the second call with {@code null}. These tests fail if
- * either regresses.
+ * <p>Both were written after one request to a stalled Heroku dyno hung for six minutes. The
+ * investigation found two defects invisible by reading the code - a read timeout arrives as
+ * a <em>checked</em> {@link SocketTimeoutException}, which {@code catch (RuntimeException)}
+ * lets past; and {@code FilterContext.next()} is single-use, so a retry filter answers the
+ * second call with {@code null}.
  *
- * <p>The fake server accepts connections and never answers, which is precisely the failure
- * a <em>connect</em> timeout does not catch. Counting accepted connections counts attempts,
- * so the retry behaviour is measured rather than inferred.
+ * <p>The fake server accepts and never replies, which is precisely what a <em>connect</em>
+ * timeout does not catch. Counting accepted connections counts attempts.
  *
- * <p>{@link Isolated} because overriding system properties is global state: without it a
- * concurrently running class could read this test's localhost base URL.
+ * <p>{@link Isolated} because it overrides system properties, which are global.
  */
 @Tag("unit")
 @Isolated
@@ -101,7 +96,7 @@ class TransportResilienceTest {
                 .hasRootCauseInstanceOf(SocketTimeoutException.class);
 
         assertThat(acceptedConnections)
-                .as("one connection per attempt - a checked timeout must not slip past the retry")
+                .as("one connection per attempt")
                 .hasValue(maxAttempts);
     }
 

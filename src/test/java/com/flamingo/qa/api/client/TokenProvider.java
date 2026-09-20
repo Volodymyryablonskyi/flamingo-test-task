@@ -1,18 +1,12 @@
 package com.flamingo.qa.api.client;
 
+import com.flamingo.qa.api.model.auth.AuthResponse;
 import com.flamingo.qa.core.config.Config;
 import com.flamingo.qa.core.config.ConfigurationException;
-import com.flamingo.qa.api.model.auth.AuthResponse;
 
 /**
- * Supplies the auth token, fetching it <strong>once per JVM</strong>.
- *
- * <p>Authenticating per test would mean a dozen-odd pointless round trips to a shared
- * public service the brief asks us not to overload, and it would put an unrelated network
- * call in front of every assertion.
- *
- * <p>Thread-safe by necessity, not by habit: test classes run concurrently, so without the
- * double-checked lock several threads would race to authenticate at the same moment.
+ * Supplies the auth token, fetching it once per JVM rather than once per test against a
+ * shared public service. Thread-safe by necessity: test classes run concurrently.
  */
 public final class TokenProvider {
 

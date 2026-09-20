@@ -8,25 +8,16 @@ import org.slf4j.LoggerFactory;
 import java.util.function.Supplier;
 
 /**
- * Re-sends a request that failed for a genuinely transient reason - 5xx, 429, or a
- * connection/read failure - with exponential backoff.
+ * Re-sends a request that failed transiently - 5xx, 429, or a connection/read failure -
+ * with exponential backoff.
  *
- * <p><strong>Why this is not a JUnit retrying extension.</strong> A test-level retry re-runs
- * the whole method, assertions included, so a real intermittent bug gets papered over by the
- * second attempt and the report claims a pass. Here only the HTTP call is repeated: it is
- * invoked by the client, below the response-spec validation and far below the test, so
- * assertions still run exactly once against whatever response finally arrived, and an
- * assertion failure stays fatal on the first attempt.
+ * <p>It lives here rather than in a JUnit retrying extension because a test-level retry
+ * re-runs assertions and can mask a real intermittent bug. Clients call it below the
+ * response-spec validation, so assertions still run exactly once.
  *
- * <p><strong>Why this is not a REST Assured {@code Filter} either</strong>, which is the
- * obvious place for it and where this started. {@code FilterContext.next()} walks a
- * single-use iterator over the filter chain: calling it a second time runs off the end and
- * returns {@code null} rather than re-sending, so a retry filter appears to work, silently
- * turns the first retry into a {@code NullPointerException}, and is measurably worse than
- * no retry at all. Measured, not assumed - see {@code TransportResilienceTest}.
- *
- * <p>Deliberately narrow: a 4xx other than 429 is the server saying the request was wrong,
- * and repeating it would only add noise against a public service.
+ * <p>It is also not a REST Assured {@code Filter}, which is the obvious place and where
+ * this started: {@code FilterContext.next()} walks a single-use iterator, so the second
+ * call returns {@code null} instead of re-sending. See {@code TransportResilienceTest}.
  */
 public final class TransientFailureRetry {
 
@@ -36,7 +27,6 @@ public final class TransientFailureRetry {
     private TransientFailureRetry() {
     }
 
-    /** Sends with the retry policy from {@link Config}. */
     public static Response send(Supplier<Response> request) {
         return send(request, Config.apiRetryMaxAttempts(), Config.apiRetryBackoff().toMillis());
     }
@@ -53,10 +43,8 @@ public final class TransientFailureRetry {
                 log.warn("Request returned HTTP {} - retrying (attempt {} of {})",
                         response.statusCode(), attempt, attempts);
             } catch (Exception transportFailure) {
-                // Exception, not RuntimeException: a read timeout surfaces as a checked
-                // SocketTimeoutException thrown through REST Assured's Groovy internals,
-                // and a RuntimeException catch lets it straight past - missing the one
-                // failure this class most needs to cover.
+                // Exception, not RuntimeException: a read timeout arrives as a checked
+                // SocketTimeoutException thrown through REST Assured's Groovy internals.
                 if (attempt == attempts) {
                     throw asUnchecked(transportFailure, attempts);
                 }
@@ -69,11 +57,11 @@ public final class TransientFailureRetry {
         throw new IllegalStateException("Retry loop exhausted without a response.");
     }
 
+    /** A 4xx other than 429 means the request was wrong; repeating it is just noise. */
     private static boolean isTransient(int statusCode) {
         return statusCode >= 500 || statusCode == TOO_MANY_REQUESTS;
     }
 
-    /** Keeps the original exception as the cause so the stack still points at the socket. */
     private static RuntimeException asUnchecked(Exception failure, int attempts) {
         if (failure instanceof RuntimeException runtimeFailure) {
             return runtimeFailure;
@@ -83,12 +71,8 @@ public final class TransientFailureRetry {
     }
 
     /**
-     * Exponential: 1x, 2x, 4x the configured backoff, to keep pressure off a struggling
-     * service.
-     *
-     * <p>The only {@code Thread.sleep} in the suite, and it is a backoff between transport
-     * retries - never a wait for application state. Waiting for state is what Playwright's
-     * auto-waiting and web-first assertions are for, and sleeping for that is banned here.
+     * The only {@code Thread.sleep} in the suite, and it is a backoff between transport
+     * retries - never a wait for application state.
      */
     private static void backOff(int completedAttempts, long backoffMillis) {
         try {

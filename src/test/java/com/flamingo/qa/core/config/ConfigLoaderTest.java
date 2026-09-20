@@ -13,12 +13,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * The configuration precedence chain is framework machinery every other test depends on,
- * so it is verified directly rather than inferred from a test that happened to pass.
- *
- * <p>The environment and system-property lookups are injected here because a JVM cannot
- * set its own environment variables - which is exactly why {@link ConfigLoader} takes them
- * as functions instead of calling {@code System.getenv} inline.
+ * The precedence chain is machinery every other test depends on, so it is verified directly
+ * rather than inferred from a test that happened to pass. The lookups are injected because
+ * a JVM cannot set its own environment variables.
  */
 @Tag("unit")
 @DisplayName("ConfigLoader")
@@ -110,7 +107,7 @@ class ConfigLoaderTest {
         }
 
         @Test
-        @DisplayName("on a misspelled boolean, which Boolean.parseBoolean would silently read as false")
+        @DisplayName("on a misspelled boolean, which Boolean.parseBoolean would read as false")
         void misspelledBooleanIsRejected() {
             ConfigLoader loader = loaderWith(Map.of(), Map.of(), Map.of("ui.headless", "ture"));
 
@@ -127,8 +124,6 @@ class ConfigLoaderTest {
         @Test
         @DisplayName("cover every key the suite reads, so a cold clone needs no setup")
         void everyTypedAccessorResolves() {
-            // Exercising the real singleton: if config.properties were missing a key, this
-            // throws here rather than mid-run inside an HTTP call.
             assertThat(Config.apiBaseUrl()).startsWith("https://");
             assertThat(Config.apiUsername()).isNotBlank();
             assertThat(Config.apiPassword()).isNotBlank();

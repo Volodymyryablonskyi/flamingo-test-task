@@ -12,20 +12,19 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 
 /**
- * Creates bookings and guarantees they are removed afterwards.
+ * Creates bookings and guarantees they are removed, so no test depends on data another left
+ * behind - mandatory with parallel classes against a shared, periodically reset service.
  *
- * <p>Test isolation on a shared, mutable, publicly writable service is not optional: tests
- * run in parallel and the service is periodically reset, so nothing may depend on data a
- * previous test left behind or on records that happen to exist.
- *
- * <p>Cleanup is deliberately forgiving. A booking that is already gone - because Restful
- * Booker reset itself mid-run, which the brief warns about - is a successful outcome for a
- * teardown, not a failure to report. Anything else is logged rather than thrown, because a
- * teardown that throws replaces the real failure with its own.
+ * <p>Cleanup is forgiving: a booking that is already gone is a successful teardown, and a
+ * teardown that throws would replace the real failure with its own.
  */
 public class BookingFixture {
 
     private static final Logger log = LoggerFactory.getLogger(BookingFixture.class);
+
+    private static final int DELETED = 201;
+    private static final int ALREADY_GONE = 404;
+    private static final int NOT_ALLOWED_BECAUSE_GONE = 405;
 
     private final BookingClient client;
     private final Deque<Integer> createdIds = new ArrayDeque<>();
@@ -34,7 +33,6 @@ public class BookingFixture {
         this.client = client;
     }
 
-    /** Creates a booking with generated data and registers it for cleanup. */
     @Step("Given an existing booking")
     public BookingResponse anExistingBooking() {
         return anExistingBooking(TestDataFactory.aBooking());
@@ -47,22 +45,18 @@ public class BookingFixture {
         return created;
     }
 
-    /**
-     * Stops tracking an id, for a test that deletes the booking itself - re-deleting would
-     * just add a pointless call to a public service.
-     */
+    /** Stops tracking an id the test deleted itself. */
     public void forget(int bookingId) {
         createdIds.remove(bookingId);
     }
 
-    /** Removes everything this fixture created. Safe to call when nothing was created. */
     @Step("Remove bookings created by this test")
     public void cleanUp() {
         while (!createdIds.isEmpty()) {
             int id = createdIds.pop();
             try {
                 int status = client.deleteReturningResponse(id).statusCode();
-                if (status != 201 && status != 404 && status != 405) {
+                if (status != DELETED && status != ALREADY_GONE && status != NOT_ALLOWED_BECAUSE_GONE) {
                     log.warn("Cleanup of booking {} returned HTTP {}", id, status);
                 }
             } catch (RuntimeException e) {

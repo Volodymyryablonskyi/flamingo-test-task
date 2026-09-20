@@ -14,32 +14,21 @@ import java.util.Map;
 import static io.restassured.RestAssured.given;
 
 /**
- * Everything this suite does to {@code /booking}.
+ * Everything the suite does to {@code /booking}.
  *
- * <p>Two shapes of method, on purpose:
+ * <p>Typed methods for happy paths, so tests read {@code booking.getFirstname()} with no
+ * JSON paths in them; raw-{@code Response} overloads for negative paths, where the status
+ * and error body are the subject and pre-validating them would assert the test away.
  *
- * <ul>
- *   <li><strong>Typed</strong> ({@link #create}, {@link #getById}) - the happy paths. They
- *       assert the transport-level expectations through a {@code ResponseSpecification} and
- *       hand back a model, so a test reads
- *       {@code assertThat(booking.getFirstname()).isEqualTo(...)} with no JSON paths in it.</li>
- *   <li><strong>Raw</strong> ({@link #getByIdReturningResponse}, {@link #updateWithoutAuthentication})
- *       - the negative paths, where the status code and the error body <em>are</em> the
- *       subject and pre-validating them would assert the thing under test away.</li>
- * </ul>
- *
- * <p>Authenticated calls resolve the token themselves through {@link TokenProvider}, so no
- * test has to carry one around.
- *
- * <p>Every call goes out through {@link TransientFailureRetry}, which sits below the
- * response-spec validation: a retried request never re-runs an assertion.
+ * <p>Authenticated calls resolve the token through {@link TokenProvider}, so no test has to
+ * carry one around.
  */
 public class BookingClient {
 
     private static final String BOOKINGS = "/booking";
     private static final String BOOKING_BY_ID = "/booking/{id}";
 
-    // Restful Booker answers a successful DELETE with 201 Created, not 200 or 204.
+    /** A successful DELETE answers 201 Created, not 200 or 204. */
     private static final int DELETED = 201;
 
     @Step("Create a booking for {booking.firstname} {booking.lastname}")
@@ -68,7 +57,6 @@ public class BookingClient {
                 .as(Booking.class);
     }
 
-    /** Unvalidated, for tests that expect the fetch to fail. */
     @Step("Fetch booking {id} (raw response)")
     public Response getByIdReturningResponse(int id) {
         return TransientFailureRetry.send(() -> given()
@@ -92,7 +80,6 @@ public class BookingClient {
                 .as(Booking.class);
     }
 
-    /** Deliberately omits the token, to prove the endpoint is actually protected. */
     @Step("Replace booking {id} without authenticating")
     public Response updateWithoutAuthentication(int id, Booking booking) {
         return TransientFailureRetry.send(() -> given()
@@ -104,9 +91,8 @@ public class BookingClient {
     }
 
     /**
-     * A map rather than a model: a PATCH body is by definition a subset, and a partly-null
-     * {@link Booking} could not express "leave {@code totalprice} alone" distinctly from
-     * "set it to null".
+     * A map, not a model: a partly-null {@link Booking} could not express "leave totalprice
+     * alone" distinctly from "set it to null".
      */
     @Step("Patch booking {id} with {changes}")
     public Booking partiallyUpdate(int id, Map<String, Object> changes) {
@@ -133,7 +119,6 @@ public class BookingClient {
                 .spec(ResponseSpecs.status(DELETED));
     }
 
-    /** Unvalidated delete, used by cleanup: a booking may already be gone after a service reset. */
     @Step("Delete booking {id} (raw response)")
     public Response deleteReturningResponse(int id) {
         return TransientFailureRetry.send(() -> given()
@@ -143,10 +128,7 @@ public class BookingClient {
                 .delete(BOOKING_BY_ID));
     }
 
-    /**
-     * {@code GET /booking?firstname=&lastname=} returns only ids - {@code [{"bookingid":1}]} -
-     * so the caller gets ids, not bookings, and has to fetch what it wants to inspect.
-     */
+    /** The search returns ids only - {@code [{"bookingid":1}]} - not bookings. */
     @Step("Find booking ids for guest \"{firstname} {lastname}\"")
     public List<Integer> findIdsByGuestName(String firstname, String lastname) {
         return TransientFailureRetry.send(() -> given()

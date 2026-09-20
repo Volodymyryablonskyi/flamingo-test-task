@@ -9,15 +9,9 @@ import java.util.Locale;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Builds realistic, unique test data.
- *
- * <p>Uniqueness is the point, not realism. Restful Booker is a shared public service that
- * other people are hitting at the same time, and {@code GET /booking?firstname=…} searches
- * across everyone's data - so a booking for "John Smith" would match strangers' records and
- * make a search assertion meaningless. Every generated surname carries a run-unique suffix.
- *
- * <p>{@link Faker} is thread-safe for the generators used here, and test classes run
- * concurrently, so one shared instance is fine.
+ * Builds test data that is unique per run. Uniqueness is the point, not realism: Restful
+ * Booker is shared, and {@code GET /booking?firstname=} searches across everyone's data, so
+ * a booking for "John Smith" would match strangers' records.
  */
 public final class TestDataFactory {
 
@@ -26,7 +20,6 @@ public final class TestDataFactory {
     private TestDataFactory() {
     }
 
-    /** A complete, valid booking with every field populated and a globally unique guest. */
     public static Booking aBooking() {
         LocalDate checkIn = LocalDate.now().plusDays(ThreadLocalRandom.current().nextInt(1, 90));
         return Booking.builder()
@@ -42,10 +35,6 @@ public final class TestDataFactory {
                 .build();
     }
 
-    /**
-     * A surname no other client of this shared service will be using, so searches and
-     * round-trip assertions are about our own data and nobody else's.
-     */
     public static String uniqueLastName() {
         return FAKER.name().lastName() + "-" + FAKER.internet().uuid().substring(0, 8);
     }
