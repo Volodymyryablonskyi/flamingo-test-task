@@ -44,8 +44,6 @@ class AuthTest extends BaseRestTest {
     @Severity(SeverityLevel.CRITICAL)
     @DisplayName("reports bad credentials in the body - with 200 OK, not 401")
     void shouldNotIssueTokenForInvalidCredentials() {
-        // Asserting the contract the API has, not the one it ought to have: expecting
-        // STATUS_401_UNAUTHORIZED here would fail against a working service.
         AuthResponse response = authClient.requestToken(Config.apiUsername(), "not-the-password")
                 .verify().hasStatusCode(STATUS_200_OK)
                 .and().asPojo(AuthResponse.class);

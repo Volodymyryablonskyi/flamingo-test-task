@@ -36,8 +36,6 @@ class BookingSearchTest extends BaseRestTest {
     @Severity(SeverityLevel.CRITICAL)
     @DisplayName("finds a booking by guest name")
     void shouldFilterBookingIdsByGuestName(GuestNameCase guest) {
-        // The surname carries a run-unique suffix: this service is shared and the search
-        // spans everyone's data, so a bare "Ada Lovelace" would match strangers' records.
         String lastname = guest.lastname() + "-" + BookingDataGenerator.uniqueLastName();
         Booking booking = BookingDataGenerator.validBooking().toBuilder()
                 .firstname(guest.firstname())
@@ -64,7 +62,6 @@ class BookingSearchTest extends BaseRestTest {
                 .verify().hasStatusCode(STATUS_200_OK)
                 .and().asListOfField("bookingid", Integer.class);
 
-        // An empty array, not a 404: no match is a valid answer to a valid query.
         assertThat(ids).isEmpty();
     }
 }

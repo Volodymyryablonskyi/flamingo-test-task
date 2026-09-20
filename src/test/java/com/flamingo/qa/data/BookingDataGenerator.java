@@ -8,11 +8,6 @@ import java.time.LocalDate;
 import java.util.Locale;
 import java.util.concurrent.ThreadLocalRandom;
 
-/**
- * Builds booking data that is unique per run. Uniqueness is the point, not realism:
- * Restful Booker is shared, and {@code GET /booking?firstname=} searches across everyone's
- * data, so a booking for "John Smith" would match strangers' records.
- */
 public final class BookingDataGenerator {
 
     private static final Faker FAKER = new Faker(Locale.ENGLISH);

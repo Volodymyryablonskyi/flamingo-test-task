@@ -16,21 +16,12 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Set;
 
-/**
- * Everything a Restful Booker test needs: the clients, the dependency on the service, and
- * arranging a booking that is guaranteed to be cleaned up.
- *
- * <p>Test isolation is not optional here - classes run in parallel against a shared,
- * publicly writable service that resets itself periodically, so nothing may depend on data
- * another test left behind.
- */
 @Epic("REST API - Restful Booker")
 @RequiresService(SystemUnderTest.RESTFUL_BOOKER)
 public abstract class BaseRestTest extends BaseApiTest {
 
     private static final CustomLogger log = CustomLogger.getLogger(BaseRestTest.class);
 
-    /** 405 is what the API answers for a DELETE of something that is no longer there. */
     private static final Set<StatusCode> ACCEPTABLE_CLEANUP_OUTCOMES = Set.of(
             StatusCode.STATUS_201_CREATED,
             StatusCode.STATUS_404_NOT_FOUND,
@@ -38,13 +29,8 @@ public abstract class BaseRestTest extends BaseApiTest {
 
     protected final BookingApiClient bookingClient = BookingApiClient.authenticated();
 
-    /**
-     * The same calls without a token. Creates and searches genuinely need no auth; for
-     * writes it is what makes "this is supposed to be rejected" visible at the call site.
-     */
     protected final BookingApiClient unauthenticatedBookingClient = BookingApiClient.unauthenticated();
 
-    /** JUnit builds a fresh test instance per method, so this is per-test state. */
     private final Deque<Integer> createdBookingIds = new ArrayDeque<>();
 
     @Step("Given an existing booking")
@@ -62,15 +48,10 @@ public abstract class BaseRestTest extends BaseApiTest {
         return created;
     }
 
-    /** Stops tracking an id the test deleted itself. */
     protected void forget(int bookingId) {
         createdBookingIds.remove(bookingId);
     }
 
-    /**
-     * Forgiving on purpose: a booking that is already gone is a successful teardown, and a
-     * teardown that throws would replace the real failure with its own.
-     */
     @AfterEach
     @Step("Remove bookings created by this test")
     void removeBookingsCreatedByThisTest() {

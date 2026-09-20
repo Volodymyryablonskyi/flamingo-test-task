@@ -8,10 +8,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * Declares which external systems a test class needs, so an unreachable one skips the class
- * with a reason instead of failing it. {@link Inherited} so a base class declares it once.
- */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @Inherited

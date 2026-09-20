@@ -77,7 +77,6 @@ class BookingCrudTest extends BaseRestTest {
                 .hasStatusCode(STATUS_200_OK)
                 .hasBodyEqualTo(Booking.class, replacement);
 
-        // The response body is the server's word for it; re-reading is the proof.
         bookingClient.getById(created.getBookingId())
                 .verify()
                 .hasStatusCode(STATUS_200_OK)
@@ -113,7 +112,6 @@ class BookingCrudTest extends BaseRestTest {
                 .totalPrice(777)
                 .build();
 
-        // The interesting half of a PATCH is what it did not change, so assert the whole body.
         bookingClient.partiallyUpdate(created.getBookingId(),
                         Map.of("firstname", "Patched", "totalprice", 777))
                 .verify()
@@ -130,11 +128,9 @@ class BookingCrudTest extends BaseRestTest {
         BookingResponse created = anExistingBooking();
         int id = created.getBookingId();
 
-        // 201 Created for a successful DELETE is the API's own choice, asserted as measured.
         bookingClient.delete(id).verify().hasStatusCode(STATUS_201_CREATED);
         forget(id);
 
-        // A delete that reported success without removing anything would otherwise pass.
         bookingClient.getById(id)
                 .verify()
                 .hasStatusCode(STATUS_404_NOT_FOUND)
@@ -157,7 +153,6 @@ class BookingCrudTest extends BaseRestTest {
                 .and().asPojo(Booking.class)
                 .getBookingDates();
 
-        // Compared against locally built dates, so a symmetric serialisation bug cannot hide.
         assertThat(stored.getCheckin()).isEqualTo(checkIn);
         assertThat(stored.getCheckout()).isEqualTo(checkOut);
     }
