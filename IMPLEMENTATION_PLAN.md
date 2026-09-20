@@ -11,17 +11,17 @@
 
 > ### ▶ Resume point — last updated 2026-09-20
 >
-> **Phases 0–5 are COMPLETE**, on the `spribe_api_test` / `avenga-api-test` architecture
-> (§3.2). Build is green: `mvn clean test` → **27/27**; `-Dgroups=graphql` → 8. All API work
-> is done: 19 REST + 8 GraphQL, against minimums of 3 and 5. 15 commits on `main`, working
-> tree clean.
+> **Phases 0–6 are COMPLETE**, on the `spribe_api_test` / `avenga-api-test` architecture
+> (§3.2). Build is green: `mvn clean test` → **28/28**; `-Dgroups=ui` → 1. API work is done
+> (19 REST + 8 GraphQL, against minimums of 3 and 5) and the UI framework is up. 17 commits
+> on `main`, working tree clean.
 >
 > **No git remote is configured and nothing has been pushed yet.**
 >
-> **Next: Phase 6** — the UI framework: `PlaywrightExtension` (browser/context/page
-> lifecycle), `BasePage`, `BrowserFactory`, `AdBlocker` and failure capture, ending with one
-> smoke test that navigates DemoQA headless. Page objects go in `src/main/java/com/flamingo/qa/ui/`,
-> UI tests in `src/test/java/com/flamingo/qa/tests/ui/`. Work the §9 roadmap in order; each
+> **Next: Phase 7** — the UI tests themselves (§6.3): `PracticeFormPage` filled out properly
+> (date picker, subjects autocomplete, file upload, React-Select state→city cascade, modal
+> verified with `SoftAssertions`) plus `WebTablesPage` for CRUD-over-a-grid. `PracticeFormPage`
+> currently exists only as the seed the smoke test needs. Work the §9 roadmap in order; each
 > phase ends in a green build plus a commit.
 >
 > Outstanding manual steps for the user: re-import the project in IntelliJ as a Maven project
@@ -279,10 +279,13 @@ Per principle #2, **step 3 alone is sufficient for a green run**. No key require
   renders everything client-side (§11.3), so nothing is present on first paint.
 - **Locators:** prefer `getByRole` / `getByLabel` / `getByPlaceholder`; fall back to `#id` only
   where DemoQA gives no accessible name. No XPath chains.
-- **Failure capture:** `ScreenshotOnFailureExtension implements TestWatcher` — on `testFailed`
-  it writes a full-page PNG to `target/screenshots/`, attaches it to Allure, and stops the
-  per-test Playwright **trace** into `target/traces/`, so a failed CI run is debuggable offline
-  via `npx playwright show-trace`.
+- **Failure capture:** `PlaywrightExtension` writes a full-page PNG to `target/screenshots/`,
+  attaches it to Allure, and saves the per-test Playwright **trace** to `target/traces/`, so a
+  failed CI run is debuggable offline via `npx playwright show-trace`.
+  > ⚠️ **Corrected during Phase 6.** The plan specified a separate `ScreenshotOnFailureExtension
+  > implements TestWatcher`. That cannot work: `TestWatcher.testFailed` fires *after* every
+  > `AfterEachCallback`, so the page is already closed and there is nothing left to photograph.
+  > Capture therefore lives in the lifecycle extension, driven by `getExecutionException()`.
 - **Page Objects expose behaviour, not widgets:** `practiceFormPage.submitRegistration(student)`
   returns a `SubmissionModal`, not `void`. Composite widgets (React-Select state/city cascade,
   the date picker) are their own components, reused across pages.
@@ -534,7 +537,7 @@ development process" is satisfied structurally, not retroactively. ~8.5 h.
 | **3** ✅ | REST negative + data-driven (9–10) | ✅ 19 API tests green; `@ParameterizedTest` wired to `testdata/guest-name-cases.json` | 0.5 h | `test(api): add negative and data-driven booking scenarios` |
 | **4** ✅ | GraphQL client + positive (1–4) | ✅ 4 tests green; variables passed as a map; queries in `.graphql` files | 1.0 h | `test(graphql): add graphql client and positive query coverage` |
 | **5** ✅ | GraphQL negative (5–8) | ✅ 8 GraphQL tests green against the **measured** contracts in §11.2, two of which the Phase 5 re-probe corrected | 0.5 h | `test(graphql): assert error contracts for invalid queries` |
-| **6** | UI framework | `PlaywrightExtension`, `BasePage`, `BrowserFactory`, `AdBlocker`, failure capture; one smoke test navigates DemoQA headless | 1.0 h | `feat(ui): add playwright page-object framework with failure capture` |
+| **6** ✅ | UI framework | ✅ all of it, plus screenshot **and** trace proved on an induced failure — a phase early | 1.0 h | `feat(ui): add playwright page-object framework with failure capture` |
 | **7** | UI tests (1–9) | 9 UI tests green headless **and** headed; zero `Thread.sleep`; screenshot verified on an **induced** failure | 2.0 h | `test(ui): cover practice form and web tables via page objects` |
 | **8** | Reporting + parallelism | `mvn allure:serve` shows request/response + screenshot attachments; 3 consecutive parallel runs stable | 0.5 h | `ci: enable allure reporting and parallel execution` |
 | **9** | CI + documentation | Actions green on push/PR; README complete; §7 traceability ticked; screenshots in `docs/report-screenshots/` | 0.5 h | `docs: add readme, ci workflow and execution report` |
@@ -686,6 +689,19 @@ retry policy per call — would complicate the client to save two seconds.
 - `GraphQlEndpoints.getQueryUri()` returns an empty path on purpose — a GraphQL API has one
   URL, and `graphql.url` already carries it in full so the schema can be repointed from
   configuration.
+
+### 11.1h Phase 6 findings
+
+| Finding | Why it matters | Handling |
+|---|---|---|
+| **`TestWatcher.testFailed` runs after every `AfterEachCallback`** | The plan specified a separate `ScreenshotOnFailureExtension` implementing `TestWatcher`. By the time it fires, the lifecycle extension has closed the page, so it could only photograph something that no longer exists | Lifecycle and capture merged into `PlaywrightExtension`, which reads `getExecutionException()` in `afterEach` while the page is still alive. **§3.7 is corrected accordingly** |
+| **`Store.CloseableResource` is deprecated in JUnit 5.14** | Registering the browser shutdown that way logs *"Type implements CloseableResource but not AutoCloseable"* on every run | The shutdown value is a plain `AutoCloseable` record |
+| **A trace on every test is waste** | Tracing every passing test writes hundreds of KB nobody opens | Tracing starts for every test but the trace is only written on failure; a pass stops it with no path, discarding it |
+
+Verified by **inducing a failure**, not by assuming: a 94 KB full-page screenshot and a
+206 KB trace were written under `target/` and attached to Allure. The screenshot also
+doubles as proof the `AdBlocker` works — the rendered form carries no ad iframe and no
+sticky banner. It is a good candidate for `docs/report-screenshots/` in Phase 9.
 
 **Observed on a live run: `mvn clean test` took 495 s**, against ~35 s normally. Restful
 Booker was resetting and throwing connection resets; the log shows
