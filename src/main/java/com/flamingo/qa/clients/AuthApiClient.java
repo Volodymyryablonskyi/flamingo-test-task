@@ -7,10 +7,6 @@ import com.flamingo.qa.http.response.ResponseWrapper;
 import com.flamingo.qa.pojo.auth.AuthRequest;
 import io.qameta.allure.Step;
 
-/**
- * {@code POST /auth}. Restful Booker answers a rejected login with 200 and
- * {@code {"reason":"Bad credentials"}}, so success is read from the body, never the status.
- */
 public class AuthApiClient extends BaseApiClient<AuthEndpoints> {
 
     public AuthApiClient() {

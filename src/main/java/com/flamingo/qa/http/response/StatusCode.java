@@ -5,17 +5,6 @@ import lombok.Getter;
 import java.util.Arrays;
 import java.util.Optional;
 
-/**
- * The HTTP status codes this suite asserts on.
- *
- * <p>Named constants instead of magic numbers: {@code hasStatusCode(STATUS_403_FORBIDDEN)}
- * says what is expected, and a failure message reads {@code 418 IM_A_TEAPOT} rather than a
- * bare integer.
- *
- * <p>Two entries look odd and are here deliberately, because both are measured behaviour of
- * Restful Booker: a successful DELETE answers {@link #STATUS_201_CREATED}, and any
- * multi-value {@code Accept} header answers {@link #STATUS_418_IM_A_TEAPOT}.
- */
 @Getter
 public enum StatusCode {
 
@@ -43,7 +32,6 @@ public enum StatusCode {
         return Arrays.stream(values()).filter(status -> status.code == code).findFirst();
     }
 
-    /** Never throws: used in assertion messages, where an unmapped code must still read well. */
     public static String describe(int code) {
         return of(code).map(status -> code + " " + status.name().replaceFirst("STATUS_[0-9]+_", ""))
                 .orElse(code + " (unmapped)");

@@ -6,12 +6,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
-/**
- * Thin slf4j wrapper that knows how to log a request and a response.
- *
- * <p>It does not also push Allure steps: {@code AllureRestAssured} already attaches the
- * full request and response to the report, and duplicating them would double the noise.
- */
 public final class CustomLogger {
 
     private static final int MAX_BODY_LENGTH = 2_000;

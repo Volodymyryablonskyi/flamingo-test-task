@@ -9,13 +9,6 @@ import io.restassured.specification.RequestSpecification;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Assembles and sends one request. Keeping the REST Assured fluent chain here means a
- * client method is a single readable line and the verb switch exists exactly once.
- *
- * <p>The send goes through {@link TransientFailureRetry}, which sits below every assertion,
- * so a retried request never re-runs a check.
- */
 public class RequestBuilder {
 
     private static final CustomLogger log = CustomLogger.getLogger(RequestBuilder.class);

@@ -11,6 +11,5 @@ public class Episode {
 
     String id;
     String name;
-    /** The production code, e.g. {@code S01E01} - the schema names this field "episode". */
     String episode;
 }

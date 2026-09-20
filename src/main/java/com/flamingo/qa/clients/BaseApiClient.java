@@ -11,16 +11,6 @@ import io.restassured.specification.RequestSpecification;
 import java.util.Map;
 import java.util.function.Supplier;
 
-/**
- * Shared plumbing for the API clients: it owns the spec and turns a method, path and
- * optional body into a {@link ResponseWrapper}.
- *
- * <p>The spec is a {@link Supplier} rather than a value so an authenticated client resolves
- * its token on each call instead of at construction, which matters because clients are
- * built once per test class while the token is fetched lazily.
- *
- * @param <T> the endpoint group this client calls
- */
 public abstract class BaseApiClient<T extends Endpoints> {
 
     private static final CustomLogger log = CustomLogger.getLogger(BaseApiClient.class);
@@ -53,10 +43,6 @@ public abstract class BaseApiClient<T extends Endpoints> {
                                       Map<String, ?> queryParams) {
         ResponseWrapper response = send(method, path, body, queryParams);
 
-        // A 403 on a call that carried a token means the token stopped being valid, which
-        // happens when Restful Booker resets mid-run. Re-authenticate and send once more:
-        // the spec supplier resolves a fresh token. Only for authenticated clients - on an
-        // anonymous one a 403 is the expected answer and retrying would hide it.
         if (reauthenticatesOn403 && response.statusCodeValue() == StatusCode.STATUS_403_FORBIDDEN.getCode()) {
             log.warn("{} {} was rejected with 403 - refreshing the auth token and retrying once",
                     method, path);

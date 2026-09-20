@@ -1,7 +1,6 @@
 package com.flamingo.qa.extensions;
 
 import com.flamingo.qa.config.Config;
-import com.flamingo.qa.ui.AdBlocker;
 import com.flamingo.qa.ui.BrowserFactory;
 import com.flamingo.qa.util.CustomLogger;
 import com.microsoft.playwright.BrowserContext;
@@ -17,15 +16,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-/**
- * Gives each UI test a clean browser context and page, and captures evidence when it fails.
- *
- * <p>Lifecycle and failure capture live in one extension rather than two on purpose.
- * {@code TestWatcher.testFailed} - the obvious home for a screenshot - runs <em>after</em>
- * all {@code AfterEachCallback}s, by which time this extension has closed the page, so a
- * watcher could only photograph something that no longer exists. Reading
- * {@link ExtensionContext#getExecutionException()} here captures while the page is alive.
- */
 public class PlaywrightExtension implements BeforeEachCallback, AfterEachCallback {
 
     private static final CustomLogger log = CustomLogger.getLogger(PlaywrightExtension.class);
@@ -36,10 +26,6 @@ public class PlaywrightExtension implements BeforeEachCallback, AfterEachCallbac
     private static final ThreadLocal<BrowserContext> CONTEXT = new ThreadLocal<>();
     private static final ThreadLocal<Page> PAGE = new ThreadLocal<>();
 
-    /**
-     * Valid only inside a test on this thread. Methods within a class run sequentially and
-     * classes run on their own threads, so a thread-local holds exactly one live page.
-     */
     public static Page page() {
         Page page = PAGE.get();
         if (page == null) {
@@ -54,7 +40,6 @@ public class PlaywrightExtension implements BeforeEachCallback, AfterEachCallbac
         registerRunShutdown(extensionContext);
 
         BrowserContext browserContext = BrowserFactory.newContext();
-        AdBlocker.applyTo(browserContext);
         if (Config.traceEnabled()) {
             browserContext.tracing().start(new Tracing.StartOptions()
                     .setScreenshots(true)
@@ -100,7 +85,6 @@ public class PlaywrightExtension implements BeforeEachCallback, AfterEachCallbac
         }
     }
 
-    /** A trace is only worth keeping for a failure; on a pass it is stopped and discarded. */
     private void stopTracing(BrowserContext browserContext, Path traceFile) {
         if (!Config.traceEnabled()) {
             return;
@@ -124,13 +108,6 @@ public class PlaywrightExtension implements BeforeEachCallback, AfterEachCallbac
                 + "." + extensionContext.getRequiredTestMethod().getName();
     }
 
-    /**
-     * Browsers outlive individual tests, so they are closed once when the whole run ends:
-     * JUnit closes the root store's resources at that point.
-     *
-     * <p>{@link AutoCloseable} rather than the older {@code Store.CloseableResource}, which
-     * JUnit 5.14 deprecates and warns about at runtime.
-     */
     private static void registerRunShutdown(ExtensionContext extensionContext) {
         extensionContext.getRoot()
                 .getStore(ExtensionContext.Namespace.GLOBAL)

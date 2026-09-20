@@ -10,13 +10,6 @@ import io.qameta.allure.Step;
 
 import java.util.Map;
 
-/**
- * Posts GraphQL documents to whatever {@code graphql.url} points at.
- *
- * <p>Documents are loaded from {@code src/test/resources/graphql/*.graphql} rather than
- * embedded as Java strings: out of a string literal they keep syntax highlighting and
- * validation, and a malformed query becomes a fixture rather than an escaped one-liner.
- */
 public class GraphQlApiClient extends BaseApiClient<GraphQlEndpoints> {
 
     private static final String DOCUMENT_DIRECTORY = "graphql/";

@@ -10,16 +10,6 @@ import com.flamingo.qa.util.CustomLogger;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Owns the expensive, reusable half of the browser stack.
- *
- * <p>{@link Playwright} and {@link Browser} are created once per <em>thread</em> and kept:
- * launching a browser costs seconds, and test classes run in parallel on a fixed pool, so
- * per-thread reuse gives each worker its own browser without paying the cost per test.
- * A {@link BrowserContext} is created per <em>test</em> instead - it is cheap, and a fresh
- * one guarantees no cookie or storage leaks between tests, which is what makes parallel
- * execution safe.
- */
 public final class BrowserFactory {
 
     private static final CustomLogger log = CustomLogger.getLogger(BrowserFactory.class);
@@ -27,7 +17,6 @@ public final class BrowserFactory {
     private static final ThreadLocal<Playwright> PLAYWRIGHT = ThreadLocal.withInitial(BrowserFactory::createPlaywright);
     private static final ThreadLocal<Browser> BROWSER = ThreadLocal.withInitial(BrowserFactory::launchBrowser);
 
-    /** Every instance created on any thread, so the run can shut all of them down. */
     private static final Set<Playwright> CREATED = ConcurrentHashMap.newKeySet();
 
     private BrowserFactory() {
@@ -41,7 +30,6 @@ public final class BrowserFactory {
         return context;
     }
 
-    /** Closes every browser the run started. Best effort: shutdown must not fail a suite. */
     public static void closeAll() {
         for (Playwright playwright : CREATED) {
             try {

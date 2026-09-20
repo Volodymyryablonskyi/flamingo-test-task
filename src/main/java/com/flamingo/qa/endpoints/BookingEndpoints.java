@@ -1,6 +1,5 @@
 package com.flamingo.qa.endpoints;
 
-/** Paths live here, not scattered through the client, so a moved endpoint is one edit. */
 public class BookingEndpoints implements Endpoints {
 
     private static final String BOOKING = "/booking";

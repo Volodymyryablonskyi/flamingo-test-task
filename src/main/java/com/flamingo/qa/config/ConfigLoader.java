@@ -6,15 +6,6 @@ import java.util.Locale;
 import java.util.Properties;
 import java.util.function.UnaryOperator;
 
-/**
- * Resolves a key against a system property, then {@code API_BASE_URL}-style environment
- * variable, then {@code config.properties}; a key that resolves nowhere throws instead of
- * returning null.
- *
- * <p>The lookups are injected rather than called inline so the chain stays one readable
- * method - a JVM cannot set its own environment variables, so they cannot be varied any
- * other way.
- */
 public final class ConfigLoader {
 
     private static final String DEFAULTS_RESOURCE = "config.properties";
@@ -59,7 +50,6 @@ public final class ConfigLoader {
         }
     }
 
-    /** Strict: {@code Boolean.parseBoolean} reads a typo like {@code ture} as false. */
     public boolean getBoolean(String key) {
         String value = get(key).trim();
         if ("true".equalsIgnoreCase(value)) {

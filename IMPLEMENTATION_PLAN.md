@@ -176,7 +176,7 @@ qa-automation-assignment/
 │   │   │   ├── response/  StatusCode · ResponseWrapper · ResponseVerifier
 │   │   │   └── retry/     TransientFailureRetry
 │   │   ├── pojo/        auth/ · booking/ · graphql/
-│   │   ├── ui/          pages/ · components/ · BrowserFactory · AdBlocker
+│   │   ├── ui/          pages/ · components/ · BrowserFactory
 │   │   └── util/        CustomLogger · Json · ResourceReader
 │   └── resources/
 │       └── config.properties          # committed defaults
@@ -517,8 +517,8 @@ Proves nothing in the brief was missed. Checked off during Phase 9.
 |---|---|---|
 | **Restful Booker (Heroku) cold-starts or is down** | Whole API suite red for reasons unrelated to our code | `ServiceHealthExtension` pings `/ping` once per run; on failure the suite is **skipped with a reason** (`Assumptions.abort`), not failed. `TransientFailureRetryFilter` covers 5xx/429/timeouts. The brief explicitly sanctions this. |
 | **Restful Booker resets data mid-run** | A booking vanishes between create and assert | Never rely on pre-existing data; each test creates what it needs, cleanup tolerates 404 |
-| **DemoQA ad iframes intercept clicks** — the classic DemoQA flake | Non-deterministic UI failures | `AdBlocker`: `context.route()` aborts googlesyndication/doubleclick/adsbygoogle, plus an init-script hiding `#fixedban` and `footer`. Applied centrally in `PlaywrightExtension`, so no test repeats it. |
-| **Practice-form submit button sits under the sticky footer** | `click()` times out | `scrollIntoViewIfNeeded()` in the page object (largely moot once the footer is hidden) |
+| ~~DemoQA ad iframes intercept clicks~~ — **measured away, 2026-09-20** | — | **No mitigation needed.** DemoQA no longer serves ads: three runs with no blocking showed `iframe[id^='google_ads']` count **0** and a Submit click landing in ~48 ms. `AdBlocker` was deleted rather than kept for a problem that no longer exists. If ads return, Playwright's actionability checks surface it as an explicit click timeout, which is a clear signal to re-add it. |
+| **Practice-form submit button sits under the sticky footer** | `click()` times out | `scrollIntoView()` in `BasePage`. The footer is in the DOM but was measured not to intercept the click |
 | **Parallel execution + shared Playwright objects** | Cross-test interference | `ThreadLocal` browser, fresh `BrowserContext` per test, `classes.default=concurrent` only |
 | **`TokenProvider` race under parallel classes** | Duplicate auth calls or a torn read | Memoised behind a thread-safe holder (§3.5) |
 | **Lombok `@Builder` + Jackson** | Silent `null` fields | `@Jacksonized` on every deserialised model; the first API round-trip test catches it immediately |
@@ -695,6 +695,21 @@ retry policy per call — would complicate the client to save two seconds.
   URL, and `graphql.url` already carries it in full so the schema can be repointed from
   configuration.
 
+
+**Post-phase correction — `AdBlocker` deleted.** The plan treated DemoQA's ad iframes as the
+headline UI risk (§8). Measured instead of assumed: with blocking switched off, three runs
+reported **zero** `iframe[id^='google_ads']` elements and a Submit click completing in
+**48 ms**. The site no longer serves ads, so the class was solving a problem that does not
+exist and was removed. The sticky footer is still in the DOM but does not intercept; the
+`scrollIntoView` helper in `BasePage` covers it.
+
+**Comments removed from `src/main/java` as well** (248 lines), on Vladimir's instruction, so
+neither source root carries prose now. Nothing measured is lost — every finding lives in this
+appendix and goes into the README's Challenges section in Phase 9. One place is worth knowing
+about: `RestAssuredConfigurator.SINGLE_VALUE_ACCEPT_JSON` must stay a literal single value,
+because `ContentType.JSON` expands to four and Restful Booker answers that with **418**. The
+constant was renamed to carry that hint without a comment.
+
 ### 11.1h Phase 6 findings
 
 | Finding | Why it matters | Handling |
@@ -705,8 +720,9 @@ retry policy per call — would complicate the client to save two seconds.
 
 Verified by **inducing a failure**, not by assuming: a 94 KB full-page screenshot and a
 206 KB trace were written under `target/` and attached to Allure. The screenshot also
-doubles as proof the `AdBlocker` works — the rendered form carries no ad iframe and no
-sticky banner. It is a good candidate for `docs/report-screenshots/` in Phase 9.
+showed the form rendering with no ad iframe at all, which is what prompted the measurement
+that removed `AdBlocker` entirely. It is a good candidate for `docs/report-screenshots/`
+in Phase 9.
 
 **Observed on a live run: `mvn clean test` took 495 s**, against ~35 s normally. Restful
 Booker was resetting and throwing connection resets; the log shows

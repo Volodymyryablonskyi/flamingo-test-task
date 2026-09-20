@@ -4,7 +4,6 @@ import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
-/** Pagination metadata; {@code next} and {@code prev} are null at the ends of the range. */
 @Value
 @Builder
 @Jacksonized

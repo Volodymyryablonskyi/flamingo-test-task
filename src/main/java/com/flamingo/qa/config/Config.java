@@ -2,10 +2,6 @@ package com.flamingo.qa.config;
 
 import java.time.Duration;
 
-/**
- * Typed view of the suite's configuration. Nothing outside this class knows a property key,
- * so a typo is a compile error rather than a null.
- */
 public final class Config {
 
     private Config() {
@@ -27,7 +23,6 @@ public final class Config {
         return Duration.ofMillis(loader().getInt("api.timeout.ms"));
     }
 
-    /** Total attempts including the first; 1 disables retrying. */
     public static int apiRetryMaxAttempts() {
         return loader().getInt("api.retry.max.attempts");
     }

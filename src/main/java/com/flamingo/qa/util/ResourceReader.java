@@ -7,16 +7,11 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-/**
- * Reads fixtures from the classpath, so test data lives in {@code src/test/resources} as
- * real files - diffable, and editable without recompiling - instead of Java string literals.
- */
 public final class ResourceReader {
 
     private ResourceReader() {
     }
 
-    /** Reads a UTF-8 resource in full, e.g. a {@code .graphql} document. */
     public static String readString(String resourcePath) {
         try (InputStream stream = open(resourcePath)) {
             return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
@@ -25,7 +20,6 @@ public final class ResourceReader {
         }
     }
 
-    /** Parses a JSON array resource into a list, e.g. {@code testdata/guest-name-cases.json}. */
     public static <T> List<T> readList(String resourcePath, Class<T> elementType) {
         try (InputStream stream = open(resourcePath)) {
             return Json.mapper().readerForListOf(elementType).readValue(stream);

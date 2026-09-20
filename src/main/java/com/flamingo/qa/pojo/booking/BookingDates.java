@@ -8,7 +8,6 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.time.LocalDate;
 
-/** {@link LocalDate} rather than String, so a test can say {@code checkIn.plusDays(3)}. */
 @Value
 @Builder
 @Jacksonized

@@ -11,14 +11,6 @@ import io.restassured.specification.RequestSpecification;
 import java.util.Map;
 import java.util.function.Supplier;
 
-/**
- * Everything the suite does to {@code /booking}.
- *
- * <p>Two clients rather than one: {@link #unauthenticated()} and {@link #authenticated()}
- * differ only in the spec they carry, which lets a negative test say
- * {@code BookingApiClient.unauthenticated().update(...)} and makes "this call is supposed
- * to be rejected" visible at the call site instead of hidden in a method name.
- */
 public class BookingApiClient extends BaseApiClient<BookingEndpoints> {
 
     private BookingApiClient(Supplier<RequestSpecification> spec, boolean reauthenticatesOn403) {
@@ -39,7 +31,6 @@ public class BookingApiClient extends BaseApiClient<BookingEndpoints> {
         return request(HttpMethod.POST, endpoints.getCreateUri(), booking);
     }
 
-    /** For negative tests: an arbitrary body, since a malformed payload is not a Booking. */
     @Step("Create a booking from a raw payload")
     public ResponseWrapper createRaw(Map<String, Object> payload) {
         return request(HttpMethod.POST, endpoints.getCreateUri(), payload);
@@ -55,10 +46,6 @@ public class BookingApiClient extends BaseApiClient<BookingEndpoints> {
         return request(HttpMethod.PUT, endpoints.getByIdUri(bookingId), booking);
     }
 
-    /**
-     * A map, not a pojo: a partly-null {@link Booking} could not express "leave totalprice
-     * alone" distinctly from "set it to null".
-     */
     @Step("Patch booking {bookingId} with {changes}")
     public ResponseWrapper partiallyUpdate(int bookingId, Map<String, Object> changes) {
         return request(HttpMethod.PATCH, endpoints.getByIdUri(bookingId), changes);
