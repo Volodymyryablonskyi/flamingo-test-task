@@ -11,8 +11,9 @@
 
 > ### ▶ Resume point — last updated 2026-09-20
 >
-> **Phases 0, 1 and 2 are COMPLETE.** Build is green: `mvn clean test` → **27/27**, stable
-> over two consecutive runs; `-Dgroups=api` → 10. 6 commits on `main`, working tree clean.
+> **Phases 0, 1 and 2 are COMPLETE**, then restructured onto the `spribe_api_test` /
+> `avenga-api-test` architecture (§3.2). Build is green: `mvn clean test` → **24/24**,
+> no warnings; `-Dgroups=api` → 10. 9 commits on `main`, working tree clean.
 >
 > **No git remote is configured and nothing has been pushed yet.**
 >
@@ -123,12 +124,32 @@ HTTP/database MCP.
 
 ### 3.2 Module strategy
 
-**Single Maven module.** A `framework` + `tests` split would be architecture theatre at this
-size and slows the reviewer down.
+**Single Maven module, two source roots.** `src/main/java` is the reusable framework;
+`src/test/java` holds only tests, their fixtures and their data. Dependencies the framework
+itself needs are compile-scoped; JUnit, the Allure JUnit integration and DataFaker stay
+test-scoped.
 
-All framework code lives in **`src/test/java`** alongside the tests. Rationale: this artifact is
-never published or consumed as a library, so every dependency stays in `test` scope and the
-build cannot leak test tooling into a `main` jar. `src/main/java` is deleted.
+> **Revised 2026-09-20.** The first draft put everything in `src/test/java` to keep every
+> dependency test-scoped. Changed on Vladimir's instruction to follow the conventions of his
+> `spribe_api_test` and `avenga-api-test` projects, which both split this way. The split is
+> also the clearer statement of the graded criterion — the framework is a thing that exists
+> on its own, not a folder inside the tests.
+
+Conventions adopted from those projects, in full:
+
+| Piece | What it does |
+|---|---|
+| `StatusCode` enum | No magic numbers. Carries `describe(int)` so a mismatch reads `expected 200 OK but got 418 IM_A_TEAPOT` |
+| `ResponseWrapper` | Wraps the REST Assured `Response`; every client method returns one, positive or negative |
+| `ResponseVerifier` | Fluent AssertJ checks — `.verify().hasStatusCode(...).hasBodyEqualTo(...)`; `.and()` returns the wrapper |
+| `HttpMethod` + `RequestBuilder` | The verb switch and the REST Assured chain exist exactly once |
+| `BaseApiClient<T extends Endpoints>` | Owns the spec, turns method + path + body into a `ResponseWrapper` |
+| `Endpoints` classes | Every URI built in one place per resource |
+| `CustomLogger` | slf4j wrapper that knows how to log a request and a response |
+
+One deliberate departure: `CustomLogger` does **not** also push Allure steps the way the
+reference version does. `AllureRestAssured` already attaches the full request and response to
+the report, so doing both would double the noise.
 
 ### 3.3 Package structure
 
@@ -140,56 +161,38 @@ qa-automation-assignment/
 │   └── report-screenshots/            # evidence for the "Test Report" deliverable
 ├── IMPLEMENTATION_PLAN.md             # this file
 ├── README.md
+├── lombok.config                      # pins @Jacksonized to Jackson 2
 ├── pom.xml
-└── src/test/
+├── src/main/                          # ===== the framework =====
+│   ├── java/com/flamingo/qa/
+│   │   ├── config/      Config · ConfigLoader · ConfigurationException · RestAssuredConfigurator
+│   │   ├── clients/     BaseApiClient · AuthApiClient · BookingApiClient · GraphQlApiClient · TokenProvider
+│   │   ├── endpoints/   Endpoints · AuthEndpoints · BookingEndpoints
+│   │   ├── http/
+│   │   │   ├── request/   HttpMethod · RequestBuilder
+│   │   │   ├── response/  StatusCode · ResponseWrapper · ResponseVerifier
+│   │   │   └── retry/     TransientFailureRetry
+│   │   ├── pojo/        auth/ · booking/ · graphql/
+│   │   ├── ui/          pages/ · components/ · BrowserFactory · AdBlocker
+│   │   └── util/        CustomLogger · Json · ResourceReader
+│   └── resources/
+│       └── config.properties          # committed defaults
+└── src/test/                          # ===== the tests =====
     ├── java/com/flamingo/qa/
-    │   ├── core/
-    │   │   ├── config/
-    │   │   │   ├── Config.java                # typed accessors
-    │   │   │   └── ConfigLoader.java          # precedence chain (§3.4)
-    │   │   ├── extension/
-    │   │   │   ├── ServiceHealthExtension.java    # skip-with-reason if the SUT is down
-    │   │   │   ├── PlaywrightExtension.java       # browser/context/page lifecycle
-    │   │   │   └── ScreenshotOnFailureExtension.java
-    │   │   └── util/
-    │   │       ├── TestDataFactory.java       # DataFaker-backed builders
-    │   │       └── ResourceReader.java        # classpath text/JSON/GraphQL loader
-    │   ├── api/
-    │   │   ├── client/
-    │   │   │   ├── AuthClient.java
-    │   │   │   ├── BookingClient.java
-    │   │   │   ├── GraphQlClient.java
-    │   │   │   └── TokenProvider.java         # thread-safe, caches the token per JVM
-    │   │   ├── filter/
-    │   │   │   └── TransientFailureRetryFilter.java   # §3.5
-    │   │   ├── model/
-    │   │   │   ├── booking/  Booking, BookingDates, BookingResponse, AuthRequest, AuthResponse
-    │   │   │   └── graphql/  GraphQlRequest, GraphQlResponse, GraphQlError
-    │   │   └── spec/
-    │   │       ├── RequestSpecs.java          # RequestSpecBuilder factories
-    │   │       └── ResponseSpecs.java         # reusable ResponseSpecification
-    │   ├── ui/
-    │   │   ├── pages/
-    │   │   │   ├── BasePage.java
-    │   │   │   ├── PracticeFormPage.java
-    │   │   │   ├── WebTablesPage.java
-    │   │   │   └── component/  SubmissionModal, DatePickerComponent, ReactSelectComponent
-    │   │   └── support/
-    │   │       ├── BrowserFactory.java        # ThreadLocal<Playwright>/<Browser>
-    │   │       └── AdBlocker.java             # DemoQA ad/iframe suppression (§8)
-    │   └── tests/
-    │       ├── BaseApiTest.java
-    │       ├── BaseUiTest.java
-    │       ├── api/      AuthTest, BookingCrudTest, BookingSearchTest, BookingNegativeTest
-    │       ├── graphql/  GraphQlPositiveTest, GraphQlNegativeTest
-    │       └── ui/       PracticeFormTest, WebTablesTest
+    │   ├── base/        BaseApiTest · BaseRestTest · BaseGraphQlTest · BaseUiTest
+    │   ├── extensions/  RequiresService · ServiceHealthExtension · SystemUnderTest
+    │   │                PlaywrightExtension · ScreenshotOnFailureExtension
+    │   ├── data/        BookingDataGenerator · StudentDataGenerator
+    │   ├── fixtures/    BookingFixture
+    │   ├── tests/       api/ · graphql/ · ui/
+    │   └── <mirrors>    config/ · http/retry/ · pojo/   — framework unit tests, in the
+    │                    same package as what they test so package-private stays testable
     └── resources/
-        ├── config.properties
-        ├── junit-platform.properties          # parallel execution config
+        ├── junit-platform.properties  # parallel execution config
         ├── allure.properties
-        ├── graphql/                           # *.graphql files, one per operation
-        ├── testdata/                          # JSON fixtures for data-driven tests
-        └── upload/sample-upload.png           # file-upload fixture
+        ├── graphql/                   # *.graphql files, one per operation
+        ├── testdata/                  # JSON fixtures for data-driven tests
+        └── upload/sample-upload.png   # file-upload fixture
 ```
 
 ### 3.4 Configuration management
@@ -212,10 +215,11 @@ Per principle #2, **step 3 alone is sufficient for a green run**. No key require
 
 ### 3.5 API layer design
 
-- **`RequestSpecs`** builds a `RequestSpecification` per flavour (`unauthenticated()`,
-  `authenticated()`, `graphql()`) with base URI, `Content-Type`, the `AllureRestAssured` filter,
-  and a **failure-only logging filter** (`LogDetail.ALL` only when validation fails). Quiet on
-  green, fully diagnostic on red — and it honours the brief's "don't overload these services".
+- **`RestAssuredConfigurator`** builds a `RequestSpecification` per flavour (`restSpec()`,
+  `authenticatedRestSpec(token)`, `graphqlSpec()`) with base URI, `Content-Type`, the
+  `AllureRestAssured` filter, and a **failure-only logging filter** (`LogDetail.ALL` only when
+  validation fails). Quiet on green, fully diagnostic on red — and it honours the brief's
+  "don't overload these services".
 - **`TransientFailureRetry`** — retries **5xx / 429 / connection and read failures** with
   exponential backoff. Putting retry at the transport layer rather than in a JUnit
   `TestTemplate` matters: a test-level retry re-runs assertions and can mask a real
@@ -231,9 +235,13 @@ Per principle #2, **step 3 alone is sufficient for a green run**. No key require
 - **`TokenProvider`** fetches `POST /auth` **once per JVM** and caches it behind a
   `Supplier`-memoising holder (thread-safe — required, since classes run concurrently).
   Re-authenticating per test would mean ~20 pointless calls to a shared public service.
-- **Clients return typed models** for happy paths, so assertions read
-  `assertThat(booking.getFirstname())`. Negative tests use a raw-`Response` overload, because
-  there the status code and error body *are* the subject.
+- **Clients return a `ResponseWrapper` for every call**, positive and negative alike, and the
+  test asserts the status at the call site through the fluent verifier:
+  `client.getById(id).verify().hasStatusCode(STATUS_200_OK).hasBodyEqualTo(Booking.class, expected)`.
+  > **Revised 2026-09-20.** The first implementation split each client method into a typed
+  > happy-path version and a raw-`Response` negative version. That doubles the client surface
+  > and, worse, hides the status code behind a method name — the very thing a negative test is
+  > about. One return type plus an explicit `StatusCode` assertion is smaller and says more.
 - **Models use Lombok** `@Value @Builder @Jacksonized`. `@Jacksonized` is mandatory — without
   it Jackson silently cannot populate a Lombok builder.
 
@@ -510,6 +518,7 @@ development process" is satisfied structurally, not retroactively. ~8.5 h.
 | **0** ✅ | Environment + repo bootstrap | ✅ §2.5 checklist green | 0.5 h | `chore: initialise repository and project structure` |
 | **1** ✅ | Config + transport layer + API base classes | ✅ 12/12 green; `ConfigLoaderTest` proves all three precedence sources; health-check skip proved both ways | 1.0 h | `feat(core): add configuration management and API transport layer` |
 | **2** ✅ | REST auth + CRUD (tests 1–8) | ✅ 10 API tests green; token caching verified by test; no hardcoded URLs | 1.5 h | `test(api): cover restful-booker auth and booking CRUD` |
+| **2b** ✅ | Comment trim, dead-class removal, then the §3.2 architecture move | ✅ 24/24 green, no build warnings; `-Dgroups=api` → 10 | 1.0 h | `refactor: adopt the spribe/avenga framework architecture` |
 | **3** | REST negative + data-driven (9–10) | 10 API tests green; `@ParameterizedTest` wired to a JSON fixture | 0.5 h | `test(api): add negative and data-driven booking scenarios` |
 | **4** | GraphQL client + positive (1–4) | 4 tests green; variables passed as a map; queries in `.graphql` files | 1.0 h | `test(graphql): add graphql client and positive query coverage` |
 | **5** | GraphQL negative (5–8) | 8 GraphQL tests green against the **measured** contracts in §11.2 | 0.5 h | `test(graphql): assert error contracts for invalid queries` |
@@ -631,6 +640,14 @@ What triggered the investigation: one `POST /booking` against a stalled Heroku d
 Also verified in Phase 2: `@JsonNaming(LowerCaseStrategy)` **is** carried onto the Lombok
 builder by `@Jacksonized`, so the models keep idiomatic camelCase without a `@JsonProperty`
 on every field. `mvn clean test` → **27/27** on two consecutive runs; `-Dgroups=api` → 10.
+
+### 11.1e Architecture-move findings
+
+| Finding | Symptom | Fix |
+|---|---|---|
+| **Jackson 3 arrives transitively**, so `@Jacksonized` cannot tell which variant to generate for | Every pojo compiled with *"Ambiguous: Jackson2 and Jackson3 exist; define which variant(s) you want in `lombok.config`"*. Only appeared once the pojos moved to `src/main/java` and the compile classpath changed | `lombok.config` with `lombok.jacksonized.jacksonVersion = 2`. Key and accepted value (`"2"`, not `TWO`) read out of `lombok-1.18.48.jar` rather than guessed |
+| **Package-private framework internals are not reachable from a differently-named test package** | `ConfigLoader`'s test constructor and `environmentVariableName` became invisible when the test moved to `…framework.config` | Framework unit tests mirror the package they test (`com.flamingo.qa.config` in both source roots) — the standard Maven arrangement |
+| **A verifier that logs at INFO is noisy on green** | `Verify status code is 200 OK` printed once per assertion, against the "quiet on green" rule the logging config already follows | Dropped to `debug`; only retries and cleanup anomalies log at WARN |
 
 ### 11.2 Live service contracts
 
