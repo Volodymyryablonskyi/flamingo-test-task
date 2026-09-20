@@ -1,0 +1,9 @@
+query CharacterById($id: ID!) {
+    character(id: $id) {
+        id
+        name
+        status
+        species
+        gender
+    }
+}

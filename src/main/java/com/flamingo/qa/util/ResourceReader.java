@@ -4,6 +4,7 @@ import com.flamingo.qa.config.ConfigurationException;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
@@ -13,6 +14,15 @@ import java.util.List;
 public final class ResourceReader {
 
     private ResourceReader() {
+    }
+
+    /** Reads a UTF-8 resource in full, e.g. a {@code .graphql} document. */
+    public static String readString(String resourcePath) {
+        try (InputStream stream = open(resourcePath)) {
+            return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new ConfigurationException("Could not read classpath resource '" + resourcePath + "'.", e);
+        }
     }
 
     /** Parses a JSON array resource into a list, e.g. {@code testdata/guest-name-cases.json}. */

@@ -44,6 +44,24 @@ public final class ResponseVerifier {
         return this;
     }
 
+    /**
+     * Asserts a JSON path is present and non-null. In GraphQL the body of interest is
+     * nested under {@code data}, and the presence of {@code errors} is itself the contract.
+     */
+    public ResponseVerifier hasJsonField(String jsonPath) {
+        Assertions.assertThat((Object) wrapper.jsonPath().get(jsonPath))
+                .as("JSON path '%s' in %s", jsonPath, wrapper.asString())
+                .isNotNull();
+        return this;
+    }
+
+    public ResponseVerifier hasNoJsonField(String jsonPath) {
+        Assertions.assertThat((Object) wrapper.jsonPath().get(jsonPath))
+                .as("JSON path '%s' should be absent in %s", jsonPath, wrapper.asString())
+                .isNull();
+        return this;
+    }
+
     /** Field-by-field, so a mismatch names the field rather than dumping two objects. */
     public <T> ResponseVerifier hasBodyEqualTo(Class<T> type, T expected) {
         Assertions.assertThat(wrapper.asPojo(type))

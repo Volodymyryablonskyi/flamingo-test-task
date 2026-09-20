@@ -1,0 +1,17 @@
+query CharacterWithEpisodes($id: ID!) {
+    character(id: $id) {
+        ...CharacterSummary
+        episode {
+            id
+            name
+            episode
+        }
+    }
+}
+
+fragment CharacterSummary on Character {
+    id
+    name
+    status
+    species
+}

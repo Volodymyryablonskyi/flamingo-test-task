@@ -1,6 +1,7 @@
 package com.flamingo.qa.http.response;
 
 import com.flamingo.qa.util.CustomLogger;
+import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
 
 import java.util.List;
@@ -39,6 +40,15 @@ public final class ResponseWrapper {
 
     public <T> T asPojo(Class<T> type) {
         return response.as(type);
+    }
+
+    /** Maps a nested part of the body, e.g. {@code data.characters}, onto a pojo. */
+    public <T> T asPojoAt(String jsonPath, Class<T> type) {
+        return response.jsonPath().getObject(jsonPath, type);
+    }
+
+    public JsonPath jsonPath() {
+        return response.jsonPath();
     }
 
     /** For a list-of-objects body where one field is wanted, e.g. {@code [{"bookingid":1}]}. */
