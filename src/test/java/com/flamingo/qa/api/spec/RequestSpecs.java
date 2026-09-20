@@ -1,11 +1,12 @@
 package com.flamingo.qa.api.spec;
 
-import com.flamingo.qa.api.filter.TransientFailureRetryFilter;
 import com.flamingo.qa.core.config.Config;
+import com.flamingo.qa.core.util.Json;
 import io.qameta.allure.restassured.AllureRestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.config.HttpClientConfig;
 import io.restassured.config.LogConfig;
+import io.restassured.config.ObjectMapperConfig;
 import io.restassured.config.RestAssuredConfig;
 import io.restassured.filter.log.LogDetail;
 import io.restassured.http.ContentType;
@@ -46,19 +47,32 @@ public final class RequestSpecs {
         return base(Config.graphqlUrl()).build();
     }
 
+    /**
+     * The literal string matters. REST Assured's {@code ContentType.JSON} expands to
+     * {@code application/json, application/javascript, text/javascript, text/json}, and
+     * Restful Booker answers any multi-value Accept header with <strong>HTTP 418 I'm a
+     * Teapot</strong> - measured: {@code application/json} alone returns 200, while
+     * {@code application/json, text/json} returns 418. A single value keeps its content
+     * negotiation happy and costs us nothing.
+     */
+    private static final String ACCEPT_JSON = "application/json";
+
     private static RequestSpecBuilder base(String baseUri) {
         return new RequestSpecBuilder()
                 .setBaseUri(baseUri)
                 .setContentType(ContentType.JSON)
-                .setAccept(ContentType.JSON)
+                .setAccept(ACCEPT_JSON)
                 .setConfig(config())
-                .addFilter(new AllureRestAssured())
-                .addFilter(new TransientFailureRetryFilter());
+                .addFilter(new AllureRestAssured());
     }
 
     private static RestAssuredConfig config() {
         int timeoutMs = (int) Config.apiTimeout().toMillis();
         return RestAssuredConfig.config()
+                // REST Assured would otherwise build its own ObjectMapper, so a model could
+                // round-trip in a unit test and still map wrongly over the wire. One mapper.
+                .objectMapperConfig(ObjectMapperConfig.objectMapperConfig()
+                        .jackson2ObjectMapperFactory((type, charset) -> Json.mapper()))
                 .logConfig(LogConfig.logConfig()
                         .enableLoggingOfRequestAndResponseIfValidationFails(LogDetail.ALL))
                 .httpClient(HttpClientConfig.httpClientConfig()
