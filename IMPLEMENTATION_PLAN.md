@@ -11,14 +11,15 @@
 
 > ### ▶ Resume point — last updated 2026-09-20
 >
-> **Phases 0, 1 and 2 are COMPLETE**, then restructured onto the `spribe_api_test` /
-> `avenga-api-test` architecture (§3.2). Build is green: `mvn clean test` → **24/24**,
-> no warnings; `-Dgroups=api` → 10. 9 commits on `main`, working tree clean.
+> **Phases 0–3 are COMPLETE**, on the `spribe_api_test` / `avenga-api-test` architecture
+> (§3.2). Build is green: `mvn clean test` → **19/19**, no warnings; `-Dgroups=api` → 19,
+> `-Dgroups=smoke` → 4. 11 commits on `main`, working tree clean.
 >
 > **No git remote is configured and nothing has been pushed yet.**
 >
-> **Next: Phase 3** — REST tests 9–10 (§6.1): the 404-for-a-non-existent-id negative case and
-> the data-driven `GET /booking?firstname=&lastname=` search. Work the §9 roadmap in order;
+> **Next: Phase 4** — the GraphQL client and the four positive queries (§6.2/1–4) against
+> `https://rickandmortyapi.com/graphql`, with the documents in `src/test/resources/graphql/`.
+> `BaseGraphQlTest` and `GraphQlApiClient` get written then. Work the §9 roadmap in order;
 > each phase ends in a green build plus a commit.
 >
 > Outstanding manual steps for the user: re-import the project in IntelliJ as a Maven project
@@ -413,7 +414,11 @@ scope can be cut under time pressure without dropping below compliance:
 | 7 | `shouldPartiallyUpdateBooking` | P2 | + | `PATCH` — untouched fields preserved |
 | 8 | `shouldDeleteBookingAndReturn404OnSubsequentGet` | P0 | +/− | `DELETE`, then prove it is really gone |
 | 9 | `shouldReturn404ForNonExistentBookingId` | P1 | − | ✅ verified: 404 |
-| 10 | `shouldFilterBookingIdsByGuestName` | P1 | + | `GET /booking?firstname=&lastname=` — **`@ParameterizedTest`, data-driven** |
+| 10 | `shouldFilterBookingIdsByGuestName` | P1 | + | `GET /booking?firstname=&lastname=` — **`@ParameterizedTest` over a JSON fixture**, 5 name shapes (apostrophe, accents, hyphen) ✅ all match |
+| 11 | `shouldReturnNoIdsForUnknownGuest` | P1 | − | ✅ empty array, not a 404 |
+| 12 | `shouldRejectDeleteWithoutAuthToken` | P1 | − | 403, and the booking is proved to have survived |
+| 13 | `shouldReturnServerErrorForIncompletePayload` | P2 | − | ✅ **500, not 400 — an API defect, pinned as measured** (§11.1f) |
+| 14 | `shouldStoreBookingDatesWithoutTimeZoneShift` | P2 | + | dates compared against locally built `LocalDate`s, so a symmetric serialisation bug cannot hide |
 
 Isolation: a `BookingFixture` creates a uniquely-named booking in `@BeforeEach` and deletes it
 in `@AfterEach`, tolerating 404 in case the service reset mid-run. Tests 3 and 8 manage their own.
@@ -519,7 +524,7 @@ development process" is satisfied structurally, not retroactively. ~8.5 h.
 | **1** ✅ | Config + transport layer + API base classes | ✅ 12/12 green; `ConfigLoaderTest` proves all three precedence sources; health-check skip proved both ways | 1.0 h | `feat(core): add configuration management and API transport layer` |
 | **2** ✅ | REST auth + CRUD (tests 1–8) | ✅ 10 API tests green; token caching verified by test; no hardcoded URLs | 1.5 h | `test(api): cover restful-booker auth and booking CRUD` |
 | **2b** ✅ | Comment trim, dead-class removal, then the §3.2 architecture move | ✅ 24/24 green, no build warnings; `-Dgroups=api` → 10 | 1.0 h | `refactor: adopt the spribe/avenga framework architecture` |
-| **3** | REST negative + data-driven (9–10) | 10 API tests green; `@ParameterizedTest` wired to a JSON fixture | 0.5 h | `test(api): add negative and data-driven booking scenarios` |
+| **3** ✅ | REST negative + data-driven (9–10) | ✅ 19 API tests green; `@ParameterizedTest` wired to `testdata/guest-name-cases.json` | 0.5 h | `test(api): add negative and data-driven booking scenarios` |
 | **4** | GraphQL client + positive (1–4) | 4 tests green; variables passed as a map; queries in `.graphql` files | 1.0 h | `test(graphql): add graphql client and positive query coverage` |
 | **5** | GraphQL negative (5–8) | 8 GraphQL tests green against the **measured** contracts in §11.2 | 0.5 h | `test(graphql): assert error contracts for invalid queries` |
 | **6** | UI framework | `PlaywrightExtension`, `BasePage`, `BrowserFactory`, `AdBlocker`, failure capture; one smoke test navigates DemoQA headless | 1.0 h | `feat(ui): add playwright page-object framework with failure capture` |
@@ -648,6 +653,20 @@ on every field. `mvn clean test` → **27/27** on two consecutive runs; `-Dgroup
 | **Jackson 3 arrives transitively**, so `@Jacksonized` cannot tell which variant to generate for | Every pojo compiled with *"Ambiguous: Jackson2 and Jackson3 exist; define which variant(s) you want in `lombok.config`"*. Only appeared once the pojos moved to `src/main/java` and the compile classpath changed | `lombok.config` with `lombok.jacksonized.jacksonVersion = 2`. Key and accepted value (`"2"`, not `TWO`) read out of `lombok-1.18.48.jar` rather than guessed |
 | **Package-private framework internals are not reachable from a differently-named test package** | `ConfigLoader`'s test constructor and `environmentVariableName` became invisible when the test moved to `…framework.config` | Framework unit tests mirror the package they test (`com.flamingo.qa.config` in both source roots) — the standard Maven arrangement |
 | **A verifier that logs at INFO is noisy on green** | `Verify status code is 200 OK` printed once per assertion, against the "quiet on green" rule the logging config already follows | Dropped to `debug`; only retries and cleanup anomalies log at WARN |
+
+### 11.1f Phase 3 findings
+
+| Finding | Evidence | Handling |
+|---|---|---|
+| **`POST /booking` with an incomplete body returns HTTP 500**, not 400 | `{"firstname":"OnlyThis"}` → `500` · `Internal Server Error` | Asserted as measured in `BookingNegativeTest`. A genuine defect in the SUT and the most report-worthy thing the API tests found — it belongs in the README's Challenges section as a bug, not as a quirk |
+| **Name search handles apostrophes, accents and hyphens correctly** | `O'Brien`, `Renée Müller`, `Smith-Jones` all round-trip through the query string and return exactly the created id | No workaround needed. Worth keeping as the data-driven case set precisely because it is where such a lookup usually breaks |
+| **An unmatched search is `[]` with 200**, not 404 | `firstname=Nobody` → `200` · `[]` | Asserted directly |
+| **Restful Booker invalidates the cached token when it resets mid-run** | A live run produced six consecutive 403s on authenticated calls, with new bookings landing on a freshly restarted id sequence | `BaseApiClient` drops the token and re-sends once on a 403, but only for authenticated clients — on an unauthenticated one 403 is the expected answer and a retry would hide it |
+
+A 5xx is retryable at the transport layer, so the incomplete-payload test sends its request
+three times before the status is asserted. Three requests once per run is within what the
+brief's "don't overload these services" allows, and the alternative — special-casing the
+retry policy per call — would complicate the client to save two seconds.
 
 ### 11.2 Live service contracts
 
