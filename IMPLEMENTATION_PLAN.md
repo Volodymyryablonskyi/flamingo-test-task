@@ -9,16 +9,16 @@
 > Every version number, HTTP contract and error shape below was **verified against the live
 > services**, not recalled — the ✅ markers point at the evidence in §11.
 
-> ### ▶ Resume point — last updated 2026-09-18
+> ### ▶ Resume point — last updated 2026-09-20
 >
-> **Phase 0 is COMPLETE** (§2.5). Build is green: `mvn clean test` → 3/3, `mvn allure:report`
-> renders, tag filtering verified. 3 commits on `main`, working tree clean.
+> **Phases 0 and 1 are COMPLETE.** Build is green: `mvn clean test` → **12/12**. 5 commits on
+> `main`, working tree clean.
 >
 > **No git remote is configured and nothing has been pushed yet.**
 >
-> **Next: Phase 1** — `Config` / `ConfigLoader` (§3.4) plus the `BaseApiTest` / `BaseUiTest`
-> base classes; then Phase 2 (REST CRUD). Work the §9 roadmap in order; each phase ends in a
-> green build plus the commit message drafted in that table.
+> **Next: Phase 2** — `AuthClient` / `TokenProvider` / `BookingClient`, the Lombok+Jackson
+> booking models, and REST tests 1–8 (§6.1). Work the §9 roadmap in order; each phase ends in
+> a green build plus a commit.
 >
 > Outstanding manual steps for the user: re-import the project in IntelliJ as a Maven project
 > (the old `.iml` was deleted), and run `gh auth login` before the repo can be created.
@@ -501,8 +501,8 @@ development process" is satisfied structurally, not retroactively. ~8.5 h.
 
 | Phase | Deliverable | Exit criteria | Est. | Commit message |
 |---|---|---|---|---|
-| **0** | Environment + repo bootstrap | §2.5 checklist green | 0.5 h | `chore: initialise repository and project structure` |
-| **1** | `pom.xml` + config + base classes | `mvn clean test` green with one placeholder test; `Config` resolves from all three sources; browsers installed | 1.0 h | `build: add maven build with junit5, rest-assured, playwright, allure` |
+| **0** ✅ | Environment + repo bootstrap | ✅ §2.5 checklist green | 0.5 h | `chore: initialise repository and project structure` |
+| **1** ✅ | Config + transport layer + API base classes | ✅ 12/12 green; `ConfigLoaderTest` proves all three precedence sources; health-check skip proved both ways | 1.0 h | `feat(core): add configuration management and API transport layer` |
 | **2** | REST auth + CRUD (tests 1–8) | 8 API tests green; token caching verified; no hardcoded URLs | 1.5 h | `test(api): cover restful-booker auth and booking CRUD` |
 | **3** | REST negative + data-driven (9–10) | 10 API tests green; `@ParameterizedTest` wired to a JSON fixture | 0.5 h | `test(api): add negative and data-driven booking scenarios` |
 | **4** | GraphQL client + positive (1–4) | 4 tests green; variables passed as a map; queries in `.graphql` files | 1.0 h | `test(graphql): add graphql client and positive query coverage` |
@@ -584,6 +584,23 @@ Three things only surfaced once the build actually ran. All are fixed in `pom.xm
 Verified working afterwards: `mvn clean test` 3/3 green · `mvn allure:report` renders ·
 `-Dgroups="smoke"` runs 3 · `-Dgroups="api"` runs 0 without failing (thanks to
 `failIfNoSpecifiedTests=false`, which matters for the CI matrix job).
+
+### 11.1c Phase 1 findings
+
+| Finding | Symptom | Fix |
+|---|---|---|
+| **`java.net.http.HttpClient` only became `AutoCloseable` in Java 21** | `try (HttpClient client = ...)` does not compile against `maven.compiler.release=17`, even on a JDK 21 toolchain — exactly what the release flag is for | Plain instantiation plus `try`/`catch` in `ServiceHealthExtension`. Caught at compile time, but it is the class of mistake that would otherwise only surface in the CI matrix's Java 17 job |
+| **Restful Booker's auth token is a cookie, not a bearer header** | Confirmed against the API docs; a `Authorization: Bearer` header is silently ignored and the `PUT` returns 403 | `RequestSpecs.authenticated(token)` sets `Cookie: token=…` once, so no test repeats the detail |
+
+Verified in Phase 1:
+
+- `mvn clean test` → **12/12 green** (3 toolchain smoke + 9 config).
+- The precedence chain is proved by `ConfigLoaderTest`, which injects the environment and
+  system-property lookups — a JVM cannot set its own environment variables, which is *why*
+  `ConfigLoader` takes them as functions rather than calling `System.getenv` inline.
+- `ServiceHealthExtension` proved **both ways**: against the live service the class runs;
+  with `-Dapi.base.url=http://localhost:1` the class is **skipped with a reason** and the
+  build stays green. Restful Booker was up on 2026-09-20, so §11.2 still holds.
 
 ### 11.2 Live service contracts
 
