@@ -69,7 +69,7 @@ public class BookingApiClient extends BaseApiClient<BookingEndpoints> {
         return request(HttpMethod.DELETE, endpoints.getByIdUri(bookingId));
     }
 
-    @Step("Find booking ids for guest \"{firstname} {lastname}\"")
+    @Step("Find booking ids for guest '{firstname} {lastname}'")
     public ResponseWrapper findByGuestName(String firstname, String lastname) {
         return request(HttpMethod.GET, endpoints.getSearchUri(), null,
                 Map.of("firstname", firstname, "lastname", lastname));

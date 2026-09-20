@@ -320,8 +320,13 @@ at 4 — respectful, as the brief asks.
 
 ## 4. Tech stack and pinned versions
 
-`maven.compiler.release = 17` (brief says Java 11+; 17 is the safe modern floor and builds on
-the local JDK 21). CI runs 17 **and** 21 to prove portability.
+`maven.compiler.release = 21`.
+
+> **Revised 2026-09-20** from 17, on Vladimir's instruction, so the suite can use modern
+> idioms — `List.getFirst()` arrived with `SequencedCollection` in Java 21 and does not
+> compile against release 17. The brief asks for "Java 11+", so 21 satisfies it, but the
+> trade is explicit and goes in the README: **a reviewer needs JDK 21**, and the CI matrix
+> drops to a single version, so cross-version portability is no longer proven by the build.
 
 ### ⚠️ "Latest" is a trap here — three deliberate downgrades
 
@@ -543,7 +548,7 @@ error contracts are already measured, so implementation is transcription rather 
 - Triggers: `push` to `main`, `pull_request`, `workflow_dispatch`
 - Two parallel jobs, `api-tests` and `ui-tests` — fast feedback, and a UI flake never blocks
   API signal
-- `actions/setup-java@v4` (temurin, matrix `[17, 21]` on the API job) with Maven caching
+- `actions/setup-java@v4` (temurin **21**) with Maven caching — single version, see §4
 - UI job caches `~/.cache/ms-playwright`, installs with `install --with-deps chromium`
 - **No secrets required** (§5) — so the workflow runs green on a fork's first PR
 - `if: always()` upload of `allure-results`, `target/screenshots`, `target/traces`, surefire reports

@@ -17,7 +17,7 @@ public class AuthApiClient extends BaseApiClient<AuthEndpoints> {
         super(RestAssuredConfigurator::restSpec, new AuthEndpoints());
     }
 
-    @Step("Request an auth token for user \"{username}\"")
+    @Step("Request an auth token for user '{username}'")
     public ResponseWrapper requestToken(String username, String password) {
         return request(HttpMethod.POST, endpoints.getAuthUri(),
                 AuthRequest.builder().username(username).password(password).build());

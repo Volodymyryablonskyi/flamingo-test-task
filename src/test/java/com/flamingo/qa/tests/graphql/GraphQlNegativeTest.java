@@ -49,7 +49,7 @@ class GraphQlNegativeTest extends BaseGraphQlTest {
                 .and().asListAt("errors", GraphQlError.class);
 
         assertThat(errors).isNotEmpty();
-        assertThat(errors.get(0).getMessage())
+        assertThat(errors.getFirst().getMessage())
                 .as("the wording belongs to the CDN that rejects the document, so only its "
                         + "presence is contract")
                 .isNotBlank();
@@ -67,10 +67,11 @@ class GraphQlNegativeTest extends BaseGraphQlTest {
                 .and().asListAt("errors", GraphQlError.class);
 
         assertThat(errors).hasSize(1);
-        assertThat(errors.get(0).getMessage())
-                .isEqualTo("Cannot query field \"nopeNotAField\" on type \"Character\".");
-        assertThat(errors.get(0).extensionCode()).isEqualTo("GRAPHQL_VALIDATION_FAILED");
-        assertThat(errors.get(0).getLocations())
+        assertThat(errors.getFirst().getMessage())
+                .isEqualTo("""
+                        Cannot query field "nopeNotAField" on type "Character".""");
+        assertThat(errors.getFirst().extensionCode()).isEqualTo("GRAPHQL_VALIDATION_FAILED");
+        assertThat(errors.getFirst().getLocations())
                 .as("the error should point at where in the document the field appears")
                 .isNotEmpty();
     }
@@ -87,9 +88,10 @@ class GraphQlNegativeTest extends BaseGraphQlTest {
                 .and().asListAt("errors", GraphQlError.class);
 
         assertThat(errors).hasSize(1);
-        assertThat(errors.get(0).getMessage())
-                .isEqualTo("Variable \"$id\" of required type \"ID!\" was not provided.");
-        assertThat(errors.get(0).extensionCode())
+        assertThat(errors.getFirst().getMessage())
+                .isEqualTo("""
+                        Variable "$id" of required type "ID!" was not provided.""");
+        assertThat(errors.getFirst().extensionCode())
                 .as("same class of failure as an unknown field, yet labelled a server error")
                 .isEqualTo("INTERNAL_SERVER_ERROR");
     }

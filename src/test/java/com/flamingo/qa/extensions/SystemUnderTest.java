@@ -14,7 +14,8 @@ public enum SystemUnderTest {
 
     GRAPHQL("GraphQL API",
             Config::graphqlUrl,
-            "{\"query\":\"{__typename}\"}",
+            """
+            {"query":"{__typename}"}""",
             status -> status == 200),
 
     DEMOQA("DemoQA",
