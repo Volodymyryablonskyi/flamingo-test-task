@@ -1,15 +1,14 @@
 package com.flamingo.qa.tests.api;
 
-import com.flamingo.qa.api.model.booking.Booking;
-import com.flamingo.qa.api.model.booking.BookingDates;
-import com.flamingo.qa.api.model.booking.BookingResponse;
-import com.flamingo.qa.core.util.TestDataFactory;
-import com.flamingo.qa.tests.BaseRestTest;
+import com.flamingo.qa.base.BaseRestTest;
+import com.flamingo.qa.data.BookingDataGenerator;
+import com.flamingo.qa.pojo.booking.Booking;
+import com.flamingo.qa.pojo.booking.BookingDates;
+import com.flamingo.qa.pojo.booking.BookingResponse;
 import io.qameta.allure.Feature;
 import io.qameta.allure.Severity;
 import io.qameta.allure.SeverityLevel;
 import io.qameta.allure.Story;
-import io.restassured.response.Response;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -17,6 +16,10 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 import java.util.Map;
 
+import static com.flamingo.qa.http.response.StatusCode.STATUS_200_OK;
+import static com.flamingo.qa.http.response.StatusCode.STATUS_201_CREATED;
+import static com.flamingo.qa.http.response.StatusCode.STATUS_403_FORBIDDEN;
+import static com.flamingo.qa.http.response.StatusCode.STATUS_404_NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Feature("Booking CRUD")
@@ -29,7 +32,7 @@ class BookingCrudTest extends BaseRestTest {
     @Severity(SeverityLevel.BLOCKER)
     @DisplayName("creates a booking and echoes every field back")
     void shouldCreateBookingWithGeneratedData() {
-        Booking request = TestDataFactory.aBooking();
+        Booking request = BookingDataGenerator.validBooking();
 
         BookingResponse created = bookings.anExistingBooking(request);
 
@@ -45,9 +48,10 @@ class BookingCrudTest extends BaseRestTest {
     void shouldRetrieveCreatedBookingById() {
         BookingResponse created = bookings.anExistingBooking();
 
-        Booking fetched = bookingClient.getById(created.getBookingId());
-
-        assertThat(fetched).usingRecursiveComparison().isEqualTo(created.getBooking());
+        bookingClient.getById(created.getBookingId())
+                .verify()
+                .hasStatusCode(STATUS_200_OK)
+                .hasBodyEqualTo(Booking.class, created.getBooking());
     }
 
     @Test
@@ -58,7 +62,7 @@ class BookingCrudTest extends BaseRestTest {
         BookingResponse created = bookings.anExistingBooking();
         Booking replacement = Booking.builder()
                 .firstname("Replaced")
-                .lastname(TestDataFactory.uniqueLastName())
+                .lastname(BookingDataGenerator.uniqueLastName())
                 .totalPrice(4_242)
                 .depositPaid(!created.getBooking().getDepositPaid())
                 .bookingDates(BookingDates.builder()
@@ -68,13 +72,16 @@ class BookingCrudTest extends BaseRestTest {
                 .additionalNeeds("Airport transfer")
                 .build();
 
-        Booking updated = bookingClient.update(created.getBookingId(), replacement);
+        bookingClient.update(created.getBookingId(), replacement)
+                .verify()
+                .hasStatusCode(STATUS_200_OK)
+                .hasBodyEqualTo(Booking.class, replacement);
 
-        assertThat(updated).usingRecursiveComparison().isEqualTo(replacement);
         // The response body is the server's word for it; re-reading is the proof.
-        assertThat(bookingClient.getById(created.getBookingId()))
-                .usingRecursiveComparison()
-                .isEqualTo(replacement);
+        bookingClient.getById(created.getBookingId())
+                .verify()
+                .hasStatusCode(STATUS_200_OK)
+                .hasBodyEqualTo(Booking.class, replacement);
     }
 
     @Test
@@ -84,15 +91,15 @@ class BookingCrudTest extends BaseRestTest {
     void shouldRejectUpdateWithoutAuthToken() {
         BookingResponse created = bookings.anExistingBooking();
 
-        Response response = bookingClient.updateWithoutAuthentication(
-                created.getBookingId(), TestDataFactory.aBooking());
+        anonymousBookingClient.update(created.getBookingId(), BookingDataGenerator.validBooking())
+                .verify()
+                .hasStatusCode(STATUS_403_FORBIDDEN)
+                .hasBodyEqualTo("Forbidden");
 
-        assertThat(response.statusCode()).isEqualTo(403);
-        assertThat(response.asString()).isEqualTo("Forbidden");
-        assertThat(bookingClient.getById(created.getBookingId()))
-                .as("a rejected update must not have changed anything")
-                .usingRecursiveComparison()
-                .isEqualTo(created.getBooking());
+        bookingClient.getById(created.getBookingId())
+                .verify()
+                .hasStatusCode(STATUS_200_OK)
+                .hasBodyEqualTo(Booking.class, created.getBooking());
     }
 
     @Test
@@ -101,16 +108,17 @@ class BookingCrudTest extends BaseRestTest {
     @DisplayName("patches named fields and leaves the rest untouched")
     void shouldPartiallyUpdateBooking() {
         BookingResponse created = bookings.anExistingBooking();
-        Booking original = created.getBooking();
-
-        Booking patched = bookingClient.partiallyUpdate(created.getBookingId(),
-                Map.of("firstname", "Patched", "totalprice", 777));
-
-        // The interesting half of a PATCH is what it did not change, so assert the whole object.
-        assertThat(patched).usingRecursiveComparison().isEqualTo(original.toBuilder()
+        Booking expected = created.getBooking().toBuilder()
                 .firstname("Patched")
                 .totalPrice(777)
-                .build());
+                .build();
+
+        // The interesting half of a PATCH is what it did not change, so assert the whole body.
+        bookingClient.partiallyUpdate(created.getBookingId(),
+                        Map.of("firstname", "Patched", "totalprice", 777))
+                .verify()
+                .hasStatusCode(STATUS_200_OK)
+                .hasBodyEqualTo(Booking.class, expected);
     }
 
     @Test
@@ -122,13 +130,15 @@ class BookingCrudTest extends BaseRestTest {
         BookingResponse created = bookings.anExistingBooking();
         int id = created.getBookingId();
 
-        bookingClient.delete(id);
+        // 201 Created for a successful DELETE is the API's own choice, asserted as measured.
+        bookingClient.delete(id).verify().hasStatusCode(STATUS_201_CREATED);
         bookings.forget(id);
 
         // A delete that reported success without removing anything would otherwise pass.
-        Response afterDeletion = bookingClient.getByIdReturningResponse(id);
-        assertThat(afterDeletion.statusCode()).isEqualTo(404);
-        assertThat(afterDeletion.asString()).isEqualTo("Not Found");
+        bookingClient.getById(id)
+                .verify()
+                .hasStatusCode(STATUS_404_NOT_FOUND)
+                .hasBodyEqualTo("Not Found");
     }
 
     @Test
@@ -137,18 +147,18 @@ class BookingCrudTest extends BaseRestTest {
     @DisplayName("stores the dates it was given, unshifted by time zones")
     void shouldStoreBookingDatesWithoutTimeZoneShift() {
         LocalDate checkIn = LocalDate.now().plusDays(30);
-        Booking request = TestDataFactory.aBooking().toBuilder()
-                .bookingDates(BookingDates.builder()
-                        .checkin(checkIn)
-                        .checkout(checkIn.plusDays(7))
-                        .build())
-                .build();
+        LocalDate checkOut = checkIn.plusDays(7);
 
-        BookingResponse created = bookings.anExistingBooking(request);
-        BookingDates stored = bookingClient.getById(created.getBookingId()).getBookingDates();
+        BookingResponse created = bookings.anExistingBooking(
+                BookingDataGenerator.bookingStaying(checkIn, checkOut));
+
+        BookingDates stored = bookingClient.getById(created.getBookingId())
+                .verify().hasStatusCode(STATUS_200_OK)
+                .and().asPojo(Booking.class)
+                .getBookingDates();
 
         // Compared against locally built dates, so a symmetric serialisation bug cannot hide.
         assertThat(stored.getCheckin()).isEqualTo(checkIn);
-        assertThat(stored.getCheckout()).isEqualTo(checkIn.plusDays(7));
+        assertThat(stored.getCheckout()).isEqualTo(checkOut);
     }
 }

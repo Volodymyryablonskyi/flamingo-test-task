@@ -12,6 +12,13 @@
     <name>Flamingo QA Automation Assignment</name>
     <description>API (REST + GraphQL) and UI test suite: REST Assured, JUnit 5, Playwright, AssertJ</description>
 
+    <!--
+      Two source roots on purpose: src/main/java is the reusable framework (clients,
+      endpoints, http layer, pojos, config) and src/test/java holds only tests, their
+      fixtures and their data. Dependencies the framework itself needs are therefore
+      compile-scoped; JUnit, the Allure JUnit integration and DataFaker stay test-scoped.
+    -->
+
     <properties>
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -61,21 +68,21 @@
                 <version>${junit.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
+        </dependency>
             <dependency>
                 <groupId>io.qameta.allure</groupId>
                 <artifactId>allure-bom</artifactId>
                 <version>${allure.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
+        </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
                 <version>${jackson.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
+        </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -102,13 +109,11 @@
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
             <version>${rest-assured.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>json-path</artifactId>
             <version>${rest-assured.version}</version>
-            <scope>test</scope>
         </dependency>
 
         <!-- ===== UI testing ===== -->
@@ -116,7 +121,6 @@
             <groupId>com.microsoft.playwright</groupId>
             <artifactId>playwright</artifactId>
             <version>${playwright.version}</version>
-            <scope>test</scope>
         </dependency>
 
         <!-- ===== Assertions ===== -->
@@ -124,19 +128,16 @@
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
             <version>${assertj.version}</version>
-            <scope>test</scope>
         </dependency>
 
         <!-- ===== JSON ===== -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
-            <scope>test</scope>
         </dependency>
 
         <!-- ===== Test data ===== -->
@@ -166,7 +167,6 @@
         <dependency>
             <groupId>io.qameta.allure</groupId>
             <artifactId>allure-rest-assured</artifactId>
-            <scope>test</scope>
         </dependency>
 
         <!-- ===== Logging ===== -->
@@ -174,7 +174,6 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
             <version>${slf4j.version}</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -219,7 +218,7 @@
                         <groupId>org.aspectj</groupId>
                         <artifactId>aspectjweaver</artifactId>
                         <version>${aspectj.version}</version>
-                    </dependency>
+                </dependency>
                 </dependencies>
             </plugin>
 
