@@ -11,16 +11,18 @@
 
 > ### ▶ Resume point — last updated 2026-09-20
 >
-> **Phases 0–3 are COMPLETE**, on the `spribe_api_test` / `avenga-api-test` architecture
-> (§3.2). Build is green: `mvn clean test` → **19/19**, no warnings; `-Dgroups=api` → 19,
-> `-Dgroups=smoke` → 4. 11 commits on `main`, working tree clean.
+> **Phases 0–4 are COMPLETE**, on the `spribe_api_test` / `avenga-api-test` architecture
+> (§3.2). Build is green: `mvn clean test` → **23/23**; `-Dgroups=api` → 23 (GraphQL carries
+> both tags), `-Dgroups=graphql` → 4, `-Dgroups=smoke` → 6. 13 commits on `main`, working
+> tree clean.
 >
 > **No git remote is configured and nothing has been pushed yet.**
 >
-> **Next: Phase 4** — the GraphQL client and the four positive queries (§6.2/1–4) against
-> `https://rickandmortyapi.com/graphql`, with the documents in `src/test/resources/graphql/`.
-> `BaseGraphQlTest` and `GraphQlApiClient` get written then. Work the §9 roadmap in order;
-> each phase ends in a green build plus a commit.
+> **Next: Phase 5** — the four GraphQL negative tests (§6.2/5–8) against the error contracts
+> measured in §11.2: non-existent id → 200 with `data.character: null` and no `errors`;
+> malformed query and unknown field → **400**. Re-confirm the malformed-query message before
+> asserting on its text (§11.2 note). Work the §9 roadmap in order; each phase ends in a
+> green build plus a commit.
 >
 > Outstanding manual steps for the user: re-import the project in IntelliJ as a Maven project
 > (the old `.iml` was deleted), and run `gh auth login` before the repo can be created.
@@ -525,7 +527,7 @@ development process" is satisfied structurally, not retroactively. ~8.5 h.
 | **2** ✅ | REST auth + CRUD (tests 1–8) | ✅ 10 API tests green; token caching verified by test; no hardcoded URLs | 1.5 h | `test(api): cover restful-booker auth and booking CRUD` |
 | **2b** ✅ | Comment trim, dead-class removal, then the §3.2 architecture move | ✅ 24/24 green, no build warnings; `-Dgroups=api` → 10 | 1.0 h | `refactor: adopt the spribe/avenga framework architecture` |
 | **3** ✅ | REST negative + data-driven (9–10) | ✅ 19 API tests green; `@ParameterizedTest` wired to `testdata/guest-name-cases.json` | 0.5 h | `test(api): add negative and data-driven booking scenarios` |
-| **4** | GraphQL client + positive (1–4) | 4 tests green; variables passed as a map; queries in `.graphql` files | 1.0 h | `test(graphql): add graphql client and positive query coverage` |
+| **4** ✅ | GraphQL client + positive (1–4) | ✅ 4 tests green; variables passed as a map; queries in `.graphql` files | 1.0 h | `test(graphql): add graphql client and positive query coverage` |
 | **5** | GraphQL negative (5–8) | 8 GraphQL tests green against the **measured** contracts in §11.2 | 0.5 h | `test(graphql): assert error contracts for invalid queries` |
 | **6** | UI framework | `PlaywrightExtension`, `BasePage`, `BrowserFactory`, `AdBlocker`, failure capture; one smoke test navigates DemoQA headless | 1.0 h | `feat(ui): add playwright page-object framework with failure capture` |
 | **7** | UI tests (1–9) | 9 UI tests green headless **and** headed; zero `Thread.sleep`; screenshot verified on an **induced** failure | 2.0 h | `test(ui): cover practice form and web tables via page objects` |
@@ -667,6 +669,31 @@ A 5xx is retryable at the transport layer, so the incomplete-payload test sends 
 three times before the status is asserted. Three requests once per run is within what the
 brief's "don't overload these services" allows, and the alternative — special-casing the
 retry policy per call — would complicate the client to save two seconds.
+
+### 11.1g Phase 4 notes
+
+- The three documents were run against the live schema before anything was asserted:
+  `characters(page:)` → `count: 826`, `pages: 42`, `prev: null`, `next: 2`; page 2 starts at
+  id 21 and shares nothing with page 1; the fragment resolves and episodes come back with
+  production codes such as `S01E01`.
+- **`info.count` is asserted as a relation, not a number.** `pages == ceil(count / 20)` holds
+  whatever the catalogue size is; pinning 826 would break the first time a character is added.
+- `GraphQlEndpoints.getQueryUri()` returns an empty path on purpose — a GraphQL API has one
+  URL, and `graphql.url` already carries it in full so the schema can be repointed from
+  configuration.
+
+**Observed on a live run: `mvn clean test` took 495 s**, against ~35 s normally. Restful
+Booker was resetting and throwing connection resets; the log shows
+`DELETE /booking/3839 was rejected with 403 - refreshing the auth token and retrying once`,
+i.e. the §11.1f token fix firing and keeping the suite green. Two consequences worth naming:
+
+- The socket timeout bounds each *read* at 30 s, not the whole call, so a service that is
+  slow but progressing stretches the run rather than failing it. That is the right trade for
+  a free public dyno — a false red is worse than a slow green — but it does mean a reviewer
+  can hit a multi-minute run. Worth a line in the README.
+- `ResponseSpecs`, which used to impose a 30 s total-duration ceiling, went away when the
+  clients moved to `ResponseWrapper`. Nothing guards total duration now. Deliberate for the
+  same reason, and recorded here so the removal is not mistaken for an oversight.
 
 ### 11.2 Live service contracts
 
