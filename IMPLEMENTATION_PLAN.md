@@ -11,14 +11,14 @@
 
 > ### ▶ Resume point — last updated 2026-09-20
 >
-> **Phases 0 and 1 are COMPLETE.** Build is green: `mvn clean test` → **12/12**. 5 commits on
-> `main`, working tree clean.
+> **Phases 0, 1 and 2 are COMPLETE.** Build is green: `mvn clean test` → **27/27**, stable
+> over two consecutive runs; `-Dgroups=api` → 10. 6 commits on `main`, working tree clean.
 >
 > **No git remote is configured and nothing has been pushed yet.**
 >
-> **Next: Phase 2** — `AuthClient` / `TokenProvider` / `BookingClient`, the Lombok+Jackson
-> booking models, and REST tests 1–8 (§6.1). Work the §9 roadmap in order; each phase ends in
-> a green build plus a commit.
+> **Next: Phase 3** — REST tests 9–10 (§6.1): the 404-for-a-non-existent-id negative case and
+> the data-driven `GET /booking?firstname=&lastname=` search. Work the §9 roadmap in order;
+> each phase ends in a green build plus a commit.
 >
 > Outstanding manual steps for the user: re-import the project in IntelliJ as a Maven project
 > (the old `.iml` was deleted), and run `gh auth login` before the repo can be created.
@@ -216,12 +216,18 @@ Per principle #2, **step 3 alone is sufficient for a green run**. No key require
   `authenticated()`, `graphql()`) with base URI, `Content-Type`, the `AllureRestAssured` filter,
   and a **failure-only logging filter** (`LogDetail.ALL` only when validation fails). Quiet on
   green, fully diagnostic on red — and it honours the brief's "don't overload these services".
-- **`TransientFailureRetryFilter`** — a REST Assured `Filter` that retries **5xx / 429 /
-  connection timeouts** twice with exponential backoff. Putting retry here rather than in a
-  JUnit `TestTemplate` matters: a test-level retry re-runs assertions and can mask a real
-  intermittent bug, and it needs a non-trivial custom extension. An HTTP-layer filter is ~30
-  lines, retries only genuinely transient transport failures, and leaves assertion failures
-  fatal on the first attempt. *(Revised from the first draft, which put this at test level.)*
+- **`TransientFailureRetry`** — retries **5xx / 429 / connection and read failures** with
+  exponential backoff. Putting retry at the transport layer rather than in a JUnit
+  `TestTemplate` matters: a test-level retry re-runs assertions and can mask a real
+  intermittent bug. This wrapper is invoked by the clients, *below* the response-spec
+  validation, so a retried request never re-runs an assertion and an assertion failure stays
+  fatal on the first attempt.
+  > ⚠️ **Corrected during Phase 2.** The first two drafts specified a REST Assured `Filter`.
+  > That cannot work: `FilterContext.next()` walks a **single-use iterator** over the filter
+  > chain, so the second call runs off the end and returns `null` instead of re-sending — a
+  > retry filter looks right, turns the first retry into a `NullPointerException`, and is
+  > measurably worse than no retry at all. Evidence in §11.1d; regression test in
+  > `TransportResilienceTest`.
 - **`TokenProvider`** fetches `POST /auth` **once per JVM** and caches it behind a
   `Supplier`-memoising holder (thread-safe — required, since classes run concurrently).
   Re-authenticating per test would mean ~20 pointless calls to a shared public service.
@@ -503,7 +509,7 @@ development process" is satisfied structurally, not retroactively. ~8.5 h.
 |---|---|---|---|---|
 | **0** ✅ | Environment + repo bootstrap | ✅ §2.5 checklist green | 0.5 h | `chore: initialise repository and project structure` |
 | **1** ✅ | Config + transport layer + API base classes | ✅ 12/12 green; `ConfigLoaderTest` proves all three precedence sources; health-check skip proved both ways | 1.0 h | `feat(core): add configuration management and API transport layer` |
-| **2** | REST auth + CRUD (tests 1–8) | 8 API tests green; token caching verified; no hardcoded URLs | 1.5 h | `test(api): cover restful-booker auth and booking CRUD` |
+| **2** ✅ | REST auth + CRUD (tests 1–8) | ✅ 10 API tests green; token caching verified by test; no hardcoded URLs | 1.5 h | `test(api): cover restful-booker auth and booking CRUD` |
 | **3** | REST negative + data-driven (9–10) | 10 API tests green; `@ParameterizedTest` wired to a JSON fixture | 0.5 h | `test(api): add negative and data-driven booking scenarios` |
 | **4** | GraphQL client + positive (1–4) | 4 tests green; variables passed as a map; queries in `.graphql` files | 1.0 h | `test(graphql): add graphql client and positive query coverage` |
 | **5** | GraphQL negative (5–8) | 8 GraphQL tests green against the **measured** contracts in §11.2 | 0.5 h | `test(graphql): assert error contracts for invalid queries` |
@@ -601,6 +607,30 @@ Verified in Phase 1:
 - `ServiceHealthExtension` proved **both ways**: against the live service the class runs;
   with `-Dapi.base.url=http://localhost:1` the class is **skipped with a reason** and the
   build stays green. Restful Booker was up on 2026-09-20, so §11.2 still holds.
+
+### 11.1d Phase 2 findings — all three are README "Challenges" material
+
+Every one of these was invisible by inspection and only appeared by running the suite
+against the live service. Each is now covered by a regression test.
+
+| Finding | Symptom | Fix |
+|---|---|---|
+| **Restful Booker answers a multi-value `Accept` header with HTTP 418 I'm a Teapot** | Every write failed with `Expected status code <200> but was <418>`. REST Assured's `ContentType.JSON` expands to `application/json, application/javascript, text/javascript, text/json` | `RequestSpecs` sets the literal string `application/json`. Measured: `application/json` → **200**, `application/json, text/json` → **418**, `text/plain` → **418** |
+| **A read timeout arrives as a *checked* `SocketTimeoutException`** thrown through REST Assured's Groovy internals | `catch (RuntimeException)` let it straight past, so the retry never fired for the one failure it most needed to cover | Catch `Exception`; wrap a non-runtime failure keeping the original as cause. `TransportResilienceTest` counts accepted connections to prove N attempts really happen |
+| **Retry inside a REST Assured `Filter` cannot work** | `FilterContext.next()` walks a single-use iterator; the second call runs off the end and returns `null`, so attempt 2 threw `NullPointerException: because "response" is null` | Retry moved out of the filter chain into `TransientFailureRetry`, called by the clients below response-spec validation |
+
+What triggered the investigation: one `POST /booking` against a stalled Heroku dyno took
+**372 seconds**. Two things were learned about the timeout configuration —
+
+- The configured socket timeout **does** apply (proved: a server that accepts and never
+  answers aborts at the configured 800 ms, not later).
+- `SO_TIMEOUT` is a **per-read** timeout, so it cannot bound a response that trickles bytes
+  forever. That is why the response-time ceiling in `ResponseSpecs` stays: it is the only
+  guard on *total* duration, and it is what caught the 372-second call.
+
+Also verified in Phase 2: `@JsonNaming(LowerCaseStrategy)` **is** carried onto the Lombok
+builder by `@Jacksonized`, so the models keep idiomatic camelCase without a `@JsonProperty`
+on every field. `mvn clean test` → **27/27** on two consecutive runs; `-Dgroups=api` → 10.
 
 ### 11.2 Live service contracts
 
