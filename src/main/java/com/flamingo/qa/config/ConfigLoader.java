@@ -25,9 +25,10 @@ public final class ConfigLoader {
     private final UnaryOperator<String> environment;
     private final UnaryOperator<String> systemProperties;
 
-    ConfigLoader(Properties defaults,
-                 UnaryOperator<String> environment,
-                 UnaryOperator<String> systemProperties) {
+    /** Public so the precedence chain can be exercised with injected sources. */
+    public ConfigLoader(Properties defaults,
+                        UnaryOperator<String> environment,
+                        UnaryOperator<String> systemProperties) {
         this.defaults = defaults;
         this.environment = environment;
         this.systemProperties = systemProperties;
@@ -84,7 +85,7 @@ public final class ConfigLoader {
         return isPresent(fromDefaults) ? fromDefaults.trim() : null;
     }
 
-    static String environmentVariableName(String key) {
+    public static String environmentVariableName(String key) {
         return key.toUpperCase(Locale.ROOT).replace('.', '_');
     }
 

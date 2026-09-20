@@ -34,7 +34,7 @@ class BookingCrudTest extends BaseRestTest {
     void shouldCreateBookingWithGeneratedData() {
         Booking request = BookingDataGenerator.validBooking();
 
-        BookingResponse created = bookings.anExistingBooking(request);
+        BookingResponse created = anExistingBooking(request);
 
         assertThat(created.getBookingId()).isNotNull().isPositive();
         assertThat(created.getBooking()).usingRecursiveComparison().isEqualTo(request);
@@ -46,7 +46,7 @@ class BookingCrudTest extends BaseRestTest {
     @Severity(SeverityLevel.BLOCKER)
     @DisplayName("retrieves a created booking by id")
     void shouldRetrieveCreatedBookingById() {
-        BookingResponse created = bookings.anExistingBooking();
+        BookingResponse created = anExistingBooking();
 
         bookingClient.getById(created.getBookingId())
                 .verify()
@@ -59,7 +59,7 @@ class BookingCrudTest extends BaseRestTest {
     @Severity(SeverityLevel.CRITICAL)
     @DisplayName("replaces every field of an existing booking")
     void shouldUpdateAllFieldsOfExistingBooking() {
-        BookingResponse created = bookings.anExistingBooking();
+        BookingResponse created = anExistingBooking();
         Booking replacement = Booking.builder()
                 .firstname("Replaced")
                 .lastname(BookingDataGenerator.uniqueLastName())
@@ -89,7 +89,7 @@ class BookingCrudTest extends BaseRestTest {
     @Severity(SeverityLevel.CRITICAL)
     @DisplayName("rejects an update sent without an auth token")
     void shouldRejectUpdateWithoutAuthToken() {
-        BookingResponse created = bookings.anExistingBooking();
+        BookingResponse created = anExistingBooking();
 
         anonymousBookingClient.update(created.getBookingId(), BookingDataGenerator.validBooking())
                 .verify()
@@ -107,7 +107,7 @@ class BookingCrudTest extends BaseRestTest {
     @Severity(SeverityLevel.NORMAL)
     @DisplayName("patches named fields and leaves the rest untouched")
     void shouldPartiallyUpdateBooking() {
-        BookingResponse created = bookings.anExistingBooking();
+        BookingResponse created = anExistingBooking();
         Booking expected = created.getBooking().toBuilder()
                 .firstname("Patched")
                 .totalPrice(777)
@@ -127,12 +127,12 @@ class BookingCrudTest extends BaseRestTest {
     @Severity(SeverityLevel.CRITICAL)
     @DisplayName("deletes a booking, after which it is really gone")
     void shouldDeleteBookingAndReturn404OnSubsequentGet() {
-        BookingResponse created = bookings.anExistingBooking();
+        BookingResponse created = anExistingBooking();
         int id = created.getBookingId();
 
         // 201 Created for a successful DELETE is the API's own choice, asserted as measured.
         bookingClient.delete(id).verify().hasStatusCode(STATUS_201_CREATED);
-        bookings.forget(id);
+        forget(id);
 
         // A delete that reported success without removing anything would otherwise pass.
         bookingClient.getById(id)
@@ -149,7 +149,7 @@ class BookingCrudTest extends BaseRestTest {
         LocalDate checkIn = LocalDate.now().plusDays(30);
         LocalDate checkOut = checkIn.plusDays(7);
 
-        BookingResponse created = bookings.anExistingBooking(
+        BookingResponse created = anExistingBooking(
                 BookingDataGenerator.bookingStaying(checkIn, checkOut));
 
         BookingDates stored = bookingClient.getById(created.getBookingId())

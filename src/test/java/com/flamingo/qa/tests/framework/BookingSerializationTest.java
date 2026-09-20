@@ -1,4 +1,4 @@
-package com.flamingo.qa.pojo;
+package com.flamingo.qa.tests.framework;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.flamingo.qa.pojo.booking.Booking;

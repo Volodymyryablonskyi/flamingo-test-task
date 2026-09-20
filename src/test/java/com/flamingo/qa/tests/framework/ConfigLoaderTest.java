@@ -1,4 +1,8 @@
-package com.flamingo.qa.config;
+package com.flamingo.qa.tests.framework;
+
+import com.flamingo.qa.config.Config;
+import com.flamingo.qa.config.ConfigLoader;
+import com.flamingo.qa.config.ConfigurationException;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

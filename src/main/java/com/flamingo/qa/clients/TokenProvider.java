@@ -18,6 +18,17 @@ public final class TokenProvider {
     private TokenProvider() {
     }
 
+    /**
+     * Drops the cached token so the next call authenticates again. Restful Booker resets
+     * periodically - the brief says so - and a reset invalidates the token mid-run, after
+     * which every authenticated call answers 403.
+     */
+    public static void invalidate() {
+        synchronized (LOCK) {
+            token = null;
+        }
+    }
+
     public static String token() {
         String cached = token;
         if (cached == null) {

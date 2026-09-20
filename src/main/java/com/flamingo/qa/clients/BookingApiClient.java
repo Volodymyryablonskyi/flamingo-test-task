@@ -21,17 +21,17 @@ import java.util.function.Supplier;
  */
 public class BookingApiClient extends BaseApiClient<BookingEndpoints> {
 
-    private BookingApiClient(Supplier<RequestSpecification> spec) {
-        super(spec, new BookingEndpoints());
+    private BookingApiClient(Supplier<RequestSpecification> spec, boolean reauthenticatesOn403) {
+        super(spec, new BookingEndpoints(), reauthenticatesOn403);
     }
 
     public static BookingApiClient unauthenticated() {
-        return new BookingApiClient(RestAssuredConfigurator::restSpec);
+        return new BookingApiClient(RestAssuredConfigurator::restSpec, false);
     }
 
     public static BookingApiClient authenticated() {
-        return new BookingApiClient(() ->
-                RestAssuredConfigurator.authenticatedRestSpec(TokenProvider.token()));
+        return new BookingApiClient(
+                () -> RestAssuredConfigurator.authenticatedRestSpec(TokenProvider.token()), true);
     }
 
     @Step("Create a booking for {booking.firstname} {booking.lastname}")
