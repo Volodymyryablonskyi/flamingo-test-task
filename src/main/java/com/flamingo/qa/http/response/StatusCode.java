@@ -43,15 +43,6 @@ public enum StatusCode {
         return Arrays.stream(values()).filter(status -> status.code == code).findFirst();
     }
 
-    /**
-     * @throws IllegalArgumentException naming the code, so an unmapped status is a prompt to
-     *         add a constant rather than a silent miss
-     */
-    public static StatusCode from(int code) {
-        return of(code).orElseThrow(() -> new IllegalArgumentException(
-                "HTTP status " + code + " has no StatusCode constant - add one."));
-    }
-
     /** Never throws: used in assertion messages, where an unmapped code must still read well. */
     public static String describe(int code) {
         return of(code).map(status -> code + " " + status.name().replaceFirst("STATUS_[0-9]+_", ""))

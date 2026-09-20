@@ -3,8 +3,6 @@ package com.flamingo.qa.http.response;
 import com.flamingo.qa.util.CustomLogger;
 import io.restassured.response.Response;
 
-import java.util.List;
-
 /**
  * Wraps a REST Assured {@link Response} so callers work with {@link StatusCode} and typed
  * bodies instead of raw integers and JSON paths.
@@ -29,10 +27,6 @@ public final class ResponseWrapper {
         return wrapper;
     }
 
-    public Response response() {
-        return response;
-    }
-
     public ResponseVerifier verify() {
         return new ResponseVerifier(this);
     }
@@ -41,18 +35,8 @@ public final class ResponseWrapper {
         return response.getStatusCode();
     }
 
-    /** @throws IllegalArgumentException if the code has no constant yet - see {@link StatusCode} */
-    public StatusCode statusCode() {
-        return StatusCode.from(statusCodeValue());
-    }
-
     public <T> T asPojo(Class<T> type) {
         return response.as(type);
-    }
-
-    /** For a list-of-objects body where only one field is wanted, e.g. {@code bookingid}. */
-    public <T> List<T> asListOfField(String jsonPath, Class<T> type) {
-        return response.jsonPath().getList(jsonPath, type);
     }
 
     public String asString() {

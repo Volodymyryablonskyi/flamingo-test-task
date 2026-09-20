@@ -11,8 +11,9 @@ import java.util.function.UnaryOperator;
  * variable, then {@code config.properties}; a key that resolves nowhere throws instead of
  * returning null.
  *
- * <p>The lookups are injected so the precedence chain is unit-testable - a JVM cannot set
- * its own environment variables.
+ * <p>The lookups are injected rather than called inline so the chain stays one readable
+ * method - a JVM cannot set its own environment variables, so they cannot be varied any
+ * other way.
  */
 public final class ConfigLoader {
 
@@ -25,10 +26,9 @@ public final class ConfigLoader {
     private final UnaryOperator<String> environment;
     private final UnaryOperator<String> systemProperties;
 
-    /** Public so the precedence chain can be exercised with injected sources. */
-    public ConfigLoader(Properties defaults,
-                        UnaryOperator<String> environment,
-                        UnaryOperator<String> systemProperties) {
+    private ConfigLoader(Properties defaults,
+                         UnaryOperator<String> environment,
+                         UnaryOperator<String> systemProperties) {
         this.defaults = defaults;
         this.environment = environment;
         this.systemProperties = systemProperties;
@@ -85,7 +85,7 @@ public final class ConfigLoader {
         return isPresent(fromDefaults) ? fromDefaults.trim() : null;
     }
 
-    public static String environmentVariableName(String key) {
+    private static String environmentVariableName(String key) {
         return key.toUpperCase(Locale.ROOT).replace('.', '_');
     }
 
