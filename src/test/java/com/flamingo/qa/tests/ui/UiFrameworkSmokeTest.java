@@ -26,8 +26,8 @@ class UiFrameworkSmokeTest extends BaseUiTest {
 
         form.open();
 
-        assertThat(form.heading()).isVisible();
-        assertThat(form.firstName()).isEditable();
-        assertThat(form.submitButton()).isVisible();
+        assertThat(form.getHeading()).isVisible();
+        assertThat(form.getFirstName()).isEditable();
+        assertThat(form.getSubmitButton()).isVisible();
     }
 }

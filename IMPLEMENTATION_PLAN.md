@@ -277,8 +277,13 @@ Per principle #2, **step 3 alone is sufficient for a green run**. No key require
   a genuinely custom condition (e.g. row count settled after filtering), `page.waitForFunction`
   or `locator.waitFor(...)`. Verified as necessary: DemoQA serves a **436-byte HTML shell** and
   renders everything client-side (§11.3), so nothing is present on first paint.
-- **Locators:** prefer `getByRole` / `getByLabel` / `getByPlaceholder`; fall back to `#id` only
-  where DemoQA gives no accessible name. No XPath chains.
+- **Locators:** held as `private final Locator` **fields** exposed through Lombok `@Getter`,
+  never methods that build one per call — a Playwright `Locator` is a lazy description
+  re-resolved on each action, so a field cannot go stale and the page object reads as a
+  declaration of the screen. *(Convention set by Vladimir on 2026-09-20; applies to every
+  page object and component added from here.)* Prefer `getByRole` / `getByLabel` /
+  `getByPlaceholder`; fall back to `#id` only where DemoQA gives no accessible name. No XPath
+  chains.
 - **Failure capture:** `PlaywrightExtension` writes a full-page PNG to `target/screenshots/`,
   attaches it to Allure, and saves the per-test Playwright **trace** to `target/traces/`, so a
   failed CI run is debuggable offline via `npx playwright show-trace`.
