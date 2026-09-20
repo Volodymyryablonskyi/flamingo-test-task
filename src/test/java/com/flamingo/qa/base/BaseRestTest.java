@@ -38,8 +38,11 @@ public abstract class BaseRestTest extends BaseApiTest {
 
     protected final BookingApiClient bookingClient = BookingApiClient.authenticated();
 
-    /** For the negative tests: same calls, no token, so the rejection is the subject. */
-    protected final BookingApiClient anonymousBookingClient = BookingApiClient.unauthenticated();
+    /**
+     * The same calls without a token. Creates and searches genuinely need no auth; for
+     * writes it is what makes "this is supposed to be rejected" visible at the call site.
+     */
+    protected final BookingApiClient unauthenticatedBookingClient = BookingApiClient.unauthenticated();
 
     /** JUnit builds a fresh test instance per method, so this is per-test state. */
     private final Deque<Integer> createdBookingIds = new ArrayDeque<>();
@@ -51,7 +54,7 @@ public abstract class BaseRestTest extends BaseApiTest {
 
     @Step("Given an existing booking for {booking.firstname} {booking.lastname}")
     protected BookingResponse anExistingBooking(Booking booking) {
-        BookingResponse created = anonymousBookingClient.create(booking)
+        BookingResponse created = unauthenticatedBookingClient.create(booking)
                 .verify().hasStatusCode(StatusCode.STATUS_200_OK)
                 .and().asPojo(BookingResponse.class);
 

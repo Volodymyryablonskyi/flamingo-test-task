@@ -91,7 +91,7 @@ class BookingCrudTest extends BaseRestTest {
     void shouldRejectUpdateWithoutAuthToken() {
         BookingResponse created = anExistingBooking();
 
-        anonymousBookingClient.update(created.getBookingId(), BookingDataGenerator.validBooking())
+        unauthenticatedBookingClient.update(created.getBookingId(), BookingDataGenerator.validBooking())
                 .verify()
                 .hasStatusCode(STATUS_403_FORBIDDEN)
                 .hasBodyEqualTo("Forbidden");

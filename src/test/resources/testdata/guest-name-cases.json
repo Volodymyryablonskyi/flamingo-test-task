@@ -1,0 +1,27 @@
+[
+  {
+    "description": "plain ascii name",
+    "firstname": "Ada",
+    "lastname": "Lovelace"
+  },
+  {
+    "description": "apostrophe in the given name",
+    "firstname": "O'Brien",
+    "lastname": "Fitzgerald"
+  },
+  {
+    "description": "accented characters",
+    "firstname": "Renée",
+    "lastname": "Müller"
+  },
+  {
+    "description": "hyphenated surname",
+    "firstname": "Mary",
+    "lastname": "Smith-Jones"
+  },
+  {
+    "description": "very short name",
+    "firstname": "Li",
+    "lastname": "Wong"
+  }
+]

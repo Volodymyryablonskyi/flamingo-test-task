@@ -3,6 +3,8 @@ package com.flamingo.qa.http.response;
 import com.flamingo.qa.util.CustomLogger;
 import io.restassured.response.Response;
 
+import java.util.List;
+
 /**
  * Wraps a REST Assured {@link Response} so callers work with {@link StatusCode} and typed
  * bodies instead of raw integers and JSON paths.
@@ -37,6 +39,11 @@ public final class ResponseWrapper {
 
     public <T> T asPojo(Class<T> type) {
         return response.as(type);
+    }
+
+    /** For a list-of-objects body where one field is wanted, e.g. {@code [{"bookingid":1}]}. */
+    public <T> List<T> asListOfField(String jsonPath, Class<T> type) {
+        return response.jsonPath().getList(jsonPath, type);
     }
 
     public String asString() {

@@ -39,6 +39,12 @@ public class BookingApiClient extends BaseApiClient<BookingEndpoints> {
         return request(HttpMethod.POST, endpoints.getCreateUri(), booking);
     }
 
+    /** For negative tests: an arbitrary body, since a malformed payload is not a Booking. */
+    @Step("Create a booking from a raw payload")
+    public ResponseWrapper createRaw(Map<String, Object> payload) {
+        return request(HttpMethod.POST, endpoints.getCreateUri(), payload);
+    }
+
     @Step("Fetch booking {bookingId}")
     public ResponseWrapper getById(int bookingId) {
         return request(HttpMethod.GET, endpoints.getByIdUri(bookingId));
