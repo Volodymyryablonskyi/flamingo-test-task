@@ -35,8 +35,8 @@ class AuthTest extends BaseRestTest {
         assertThat(response.isSuccessful())
                 .as("authentication outcome, which the status code does not reveal")
                 .isTrue();
-        assertThat(response.getToken()).isNotBlank();
-        assertThat(response.getReason()).isNull();
+        assertThat(response.token()).isNotBlank();
+        assertThat(response.reason()).isNull();
     }
 
     @Test
@@ -49,8 +49,8 @@ class AuthTest extends BaseRestTest {
                 .and().asPojo(AuthResponse.class);
 
         assertThat(response.isSuccessful()).isFalse();
-        assertThat(response.getToken()).isNull();
-        assertThat(response.getReason()).isEqualTo("Bad credentials");
+        assertThat(response.token()).isNull();
+        assertThat(response.reason()).isEqualTo("Bad credentials");
     }
 
     @Test

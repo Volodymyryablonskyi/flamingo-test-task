@@ -49,7 +49,7 @@ class BookingSearchTest extends BaseRestTest {
 
         assertThat(ids)
                 .as("search for %s %s", guest.firstname(), lastname)
-                .containsExactly(created.getBookingId());
+                .containsExactly(created.bookingId());
     }
 
     @Test

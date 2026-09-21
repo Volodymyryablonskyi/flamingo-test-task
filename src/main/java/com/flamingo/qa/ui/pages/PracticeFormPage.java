@@ -59,16 +59,16 @@ public class PracticeFormPage extends BasePage {
 
     @Step("Fill the registration form for {student.firstName} {student.lastName}")
     public PracticeFormPage fill(Student student) {
-        firstName.fill(student.getFirstName());
-        lastName.fill(student.getLastName());
-        email.fill(student.getEmail());
-        gender(student.getGender()).click();
-        mobile.fill(student.getMobile());
+        firstName.fill(student.firstName());
+        lastName.fill(student.lastName());
+        email.fill(student.email());
+        gender(student.gender()).click();
+        mobile.fill(student.mobile());
         selectDateOfBirth(student);
-        selectSubject(student.getSubject());
-        hobby(student.getHobby()).click();
-        uploadPicture.setInputFiles(Path.of("src/test/resources/upload/" + student.getPictureName()));
-        currentAddress.fill(student.getCurrentAddress());
+        selectSubject(student.subject());
+        hobby(student.hobby()).click();
+        uploadPicture.setInputFiles(Path.of("src/test/resources/upload/" + student.pictureName()));
+        currentAddress.fill(student.currentAddress());
         selectStateAndCity(student);
         return this;
     }
@@ -93,10 +93,10 @@ public class PracticeFormPage extends BasePage {
 
     private void selectDateOfBirth(Student student) {
         dateOfBirthInput.click();
-        monthSelect.selectOption(student.getDateOfBirth().format(MONTH));
-        yearSelect.selectOption(String.valueOf(student.getDateOfBirth().getYear()));
+        monthSelect.selectOption(student.dateOfBirth().format(MONTH));
+        yearSelect.selectOption(String.valueOf(student.dateOfBirth().getYear()));
         page.locator(".react-datepicker__day--%03d:not(.react-datepicker__day--outside-month)"
-                .formatted(student.getDateOfBirth().getDayOfMonth())).click();
+                .formatted(student.dateOfBirth().getDayOfMonth())).click();
     }
 
     private void selectSubject(String subject) {
@@ -106,12 +106,12 @@ public class PracticeFormPage extends BasePage {
 
     private void selectStateAndCity(Student student) {
         stateContainer.click();
-        stateInput.fill(student.getState());
-        option(stateContainer, student.getState()).click();
+        stateInput.fill(student.state());
+        option(stateContainer, student.state()).click();
 
         cityContainer.click();
-        cityInput.fill(student.getCity());
-        option(cityContainer, student.getCity()).click();
+        cityInput.fill(student.city());
+        option(cityContainer, student.city()).click();
     }
 
     private static Locator option(Locator container, String name) {

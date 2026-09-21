@@ -40,11 +40,11 @@ class BookingNegativeTest extends BaseRestTest {
     void shouldRejectDeleteWithoutAuthToken() {
         BookingResponse created = anExistingBooking();
 
-        unauthenticatedBookingClient.delete(created.getBookingId())
+        unauthenticatedBookingClient.delete(created.bookingId())
                 .verify()
                 .hasStatusCode(STATUS_403_FORBIDDEN);
 
-        bookingClient.getById(created.getBookingId())
+        bookingClient.getById(created.bookingId())
                 .verify()
                 .hasStatusCode(STATUS_200_OK);
     }

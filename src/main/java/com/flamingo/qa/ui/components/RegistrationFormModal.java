@@ -31,12 +31,12 @@ public class RegistrationFormModal {
     }
 
     public void fill(Employee employee) {
-        firstName.fill(employee.getFirstName());
-        lastName.fill(employee.getLastName());
-        email.fill(employee.getEmail());
-        age.fill(employee.getAge());
-        salary.fill(employee.getSalary());
-        department.fill(employee.getDepartment());
+        firstName.fill(employee.firstName());
+        lastName.fill(employee.lastName());
+        email.fill(employee.email());
+        age.fill(employee.age());
+        salary.fill(employee.salary());
+        department.fill(employee.department());
     }
 
     public void submit() {

@@ -35,17 +35,17 @@ class CharacterQueryTest extends BaseGraphQlTest {
     void shouldReturnPaginatedListOfCharacters() {
         CharactersPage page = charactersOnPage(1);
 
-        assertThat(page.getResults())
+        assertThat(page.results())
                 .hasSize(PAGE_SIZE)
                 .doesNotContainNull()
-                .allSatisfy(character -> assertThat(character.getName()).isNotBlank());
+                .allSatisfy(character -> assertThat(character.name()).isNotBlank());
 
-        assertThat(page.getInfo().getCount()).isPositive();
-        assertThat(page.getInfo().getPages())
+        assertThat(page.info().count()).isPositive();
+        assertThat(page.info().pages())
                 .as("pages should be count divided by page size, rounded up")
-                .isEqualTo((page.getInfo().getCount() + PAGE_SIZE - 1) / PAGE_SIZE);
-        assertThat(page.getInfo().getPrev()).isNull();
-        assertThat(page.getInfo().getNext()).isEqualTo(2);
+                .isEqualTo((page.info().count() + PAGE_SIZE - 1) / PAGE_SIZE);
+        assertThat(page.info().prev()).isNull();
+        assertThat(page.info().next()).isEqualTo(2);
     }
 
     @Test
@@ -58,10 +58,10 @@ class CharacterQueryTest extends BaseGraphQlTest {
                 .verify().hasStatusCode(STATUS_200_OK).hasNoJsonField("errors")
                 .and().asPojoAt("data.character", Character.class);
 
-        assertThat(character.getId()).isEqualTo("1");
-        assertThat(character.getName()).isEqualTo("Rick Sanchez");
-        assertThat(character.getStatus()).isEqualTo("Alive");
-        assertThat(character.getSpecies()).isEqualTo("Human");
+        assertThat(character.id()).isEqualTo("1");
+        assertThat(character.name()).isEqualTo("Rick Sanchez");
+        assertThat(character.status()).isEqualTo("Alive");
+        assertThat(character.species()).isEqualTo("Human");
     }
 
     @Test
@@ -87,18 +87,18 @@ class CharacterQueryTest extends BaseGraphQlTest {
                 .verify().hasStatusCode(STATUS_200_OK).hasNoJsonField("errors")
                 .and().asPojoAt("data.character", Character.class);
 
-        assertThat(character.getName())
+        assertThat(character.name())
                 .as("fields selected through the fragment")
                 .isEqualTo("Rick Sanchez");
-        assertThat(character.getSpecies()).isEqualTo("Human");
+        assertThat(character.species()).isEqualTo("Human");
 
-        assertThat(character.getEpisode())
+        assertThat(character.episode())
                 .as("episodes are a different type reached through the character")
                 .isNotEmpty()
                 .allSatisfy(episode -> {
-                    assertThat(episode.getId()).isNotBlank();
-                    assertThat(episode.getName()).isNotBlank();
-                    assertThat(episode.getEpisode()).matches("S\\d{2}E\\d{2}");
+                    assertThat(episode.id()).isNotBlank();
+                    assertThat(episode.name()).isNotBlank();
+                    assertThat(episode.episode()).matches("S\\d{2}E\\d{2}");
                 });
     }
 
@@ -109,6 +109,6 @@ class CharacterQueryTest extends BaseGraphQlTest {
     }
 
     private static List<String> idsOf(CharactersPage page) {
-        return page.getResults().stream().map(Character::getId).toList();
+        return page.results().stream().map(Character::id).toList();
     }
 }

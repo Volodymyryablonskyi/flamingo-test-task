@@ -104,7 +104,7 @@ src/main/java/com/flamingo/qa/          the reusable framework
 ├── config/       ConfigLoader (3-source precedence), Config, RestAssuredConfigurator
 ├── endpoints/    path constants, one class per resource
 ├── http/         RequestBuilder · ResponseWrapper/ResponseVerifier · TransientFailureRetry
-├── pojo/         Jackson + Lombok models: auth, booking, graphql, ui
+├── pojo/         Java records: auth, booking, graphql, ui
 ├── ui/           BrowserFactory, pages/ (BasePage + page objects), components/
 └── util/         Json, ResourceReader, CustomLogger
 
@@ -158,6 +158,13 @@ at all is present on first paint.
 description re-resolved on each action, so a field cannot go stale the way a Selenium
 `WebElement` would. The composite widgets (the registration modal, the submission modal) are
 their own components, reused across pages.
+
+**Models are records.** All fourteen request/response models are Java `record`s rather than
+Lombok `@Value` classes. Immutability, `equals`/`hashCode` and a readable `toString` come from
+the language, and Jackson binds straight to the canonical constructor — so eight of them carry no
+annotation at all, and `@Jacksonized` disappeared from the project entirely. Lombok `@Builder`
+survives on exactly the six models whose builders the tests actually use, and `@Getter` on the
+page objects. Each remaining annotation is there because something calls it.
 
 **Configuration is layered, not hardcoded.** `-D` beats environment variable beats
 `config.properties`. There is no URL or credential anywhere in a test class, which is what lets

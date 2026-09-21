@@ -44,7 +44,7 @@ public abstract class BaseRestTest extends BaseApiTest {
                 .verify().hasStatusCode(StatusCode.STATUS_200_OK)
                 .and().asPojo(BookingResponse.class);
 
-        createdBookingIds.push(created.getBookingId());
+        createdBookingIds.push(created.bookingId());
         return created;
     }
 

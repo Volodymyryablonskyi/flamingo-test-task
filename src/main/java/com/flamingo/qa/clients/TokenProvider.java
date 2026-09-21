@@ -42,8 +42,8 @@ public final class TokenProvider {
             throw new ConfigurationException(
                     "Could not authenticate against " + Config.apiBaseUrl()
                             + " as user '" + Config.apiUsername() + "': "
-                            + (response.getReason() == null ? "no token in the response" : response.getReason()));
+                            + (response.reason() == null ? "no token in the response" : response.reason()));
         }
-        return response.getToken();
+        return response.token();
     }
 }

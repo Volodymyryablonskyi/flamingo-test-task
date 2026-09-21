@@ -49,7 +49,7 @@ class GraphQlNegativeTest extends BaseGraphQlTest {
                 .and().asListAt("errors", GraphQlError.class);
 
         assertThat(errors).isNotEmpty();
-        assertThat(errors.getFirst().getMessage())
+        assertThat(errors.getFirst().message())
                 .as("the wording belongs to the CDN that rejects the document, so only its "
                         + "presence is contract")
                 .isNotBlank();
@@ -67,11 +67,11 @@ class GraphQlNegativeTest extends BaseGraphQlTest {
                 .and().asListAt("errors", GraphQlError.class);
 
         assertThat(errors).hasSize(1);
-        assertThat(errors.getFirst().getMessage())
+        assertThat(errors.getFirst().message())
                 .isEqualTo("""
                         Cannot query field "nopeNotAField" on type "Character".""");
         assertThat(errors.getFirst().extensionCode()).isEqualTo("GRAPHQL_VALIDATION_FAILED");
-        assertThat(errors.getFirst().getLocations())
+        assertThat(errors.getFirst().locations())
                 .as("the error should point at where in the document the field appears")
                 .isNotEmpty();
     }
@@ -88,7 +88,7 @@ class GraphQlNegativeTest extends BaseGraphQlTest {
                 .and().asListAt("errors", GraphQlError.class);
 
         assertThat(errors).hasSize(1);
-        assertThat(errors.getFirst().getMessage())
+        assertThat(errors.getFirst().message())
                 .isEqualTo("""
                         Variable "$id" of required type "ID!" was not provided.""");
         assertThat(errors.getFirst().extensionCode())

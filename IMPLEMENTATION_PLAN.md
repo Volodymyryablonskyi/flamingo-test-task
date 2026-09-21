@@ -167,7 +167,7 @@ qa-automation-assignment/
 │   └── report-screenshots/            # evidence for the "Test Report" deliverable
 ├── IMPLEMENTATION_PLAN.md             # this file
 ├── README.md
-├── lombok.config                      # pins @Jacksonized to Jackson 2
+├── lombok.config                      # stopBubbling only
 ├── pom.xml
 ├── src/main/                          # ===== the framework =====
 │   ├── java/com/flamingo/qa/
@@ -248,8 +248,10 @@ Per principle #2, **step 3 alone is sufficient for a green run**. No key require
   > happy-path version and a raw-`Response` negative version. That doubles the client surface
   > and, worse, hides the status code behind a method name — the very thing a negative test is
   > about. One return type plus an explicit `StatusCode` assertion is smaller and says more.
-- **Models use Lombok** `@Value @Builder @Jacksonized`. `@Jacksonized` is mandatory — without
-  it Jackson silently cannot populate a Lombok builder.
+- **Models are Java `record`s** (converted 2026-09-21, §11.1k). Jackson binds to the canonical
+  constructor, so a deserialised model needs no annotation at all; Lombok `@Builder` stays only
+  on the six models whose builders are actually called. `@Jacksonized` is gone from the project —
+  it exists to make Jackson populate a *Lombok* builder, which records no longer need.
 
 ### 3.6 GraphQL layer design
 
@@ -515,7 +517,7 @@ Proves nothing in the brief was missed - checked off in Phase 9. **Every row is 
 | AssertJ assertions | §3.8 — AssertJ only, `SoftAssertions` for multi-field |
 | Jackson | models + GraphQL ser/de (§3.5, §3.6) |
 | Allure *(bonus)* | §4, Phase 8; `AllureEnvironmentListener` fills the Environment widget |
-| Lombok *(bonus)* | `@Value @Builder @Jacksonized` (§3.5) |
+| Lombok *(bonus)* | `@Builder` on the six models with builders, `@Getter` on every page object (§3.5, §3.7) |
 | Clear package structure | §3.3 |
 | `.gitignore` | Phase 0; `.playwright-mcp/` added in Phase 7 |
 | `pom.xml` with all dependencies | §4 |
@@ -540,7 +542,7 @@ Proves nothing in the brief was missed - checked off in Phase 9. **Every row is 
 | **Practice-form submit button sits under the sticky footer** | `click()` times out | `scrollIntoView()` in `BasePage`. The footer is in the DOM but was measured not to intercept the click |
 | **Parallel execution + shared Playwright objects** | Cross-test interference | `ThreadLocal` browser, fresh `BrowserContext` per test, `classes.default=concurrent` only |
 | **`TokenProvider` race under parallel classes** | Duplicate auth calls or a torn read | Memoised behind a thread-safe holder (§3.5) |
-| **Lombok `@Builder` + Jackson** | Silent `null` fields | `@Jacksonized` on every deserialised model; the first API round-trip test catches it immediately |
+| ~~**Lombok `@Builder` + Jackson**~~ — **dissolved 2026-09-21** | Was: silent `null` fields | The models are records, so Jackson uses the canonical constructor and there is no builder to populate. The whole failure mode is gone rather than mitigated (§11.1k) |
 | **Allure `argLine` clobbered by surefire** | Empty Allure report | `@{argLine}` late-binding syntax |
 | **Bleeding-edge major versions** (JUnit 6, Allure 3, AssertJ 4-M1) | Build breaks on someone else's `.0` | Deliberate pins with documented rationale (§4) |
 | **Rick and Morty API rate limits** | Intermittent failures | Low test count, parallelism capped at 4, retry filter covers 429 |
@@ -786,6 +788,37 @@ them — which is exactly what turned up the suite's only real flake.
 | **The trace was written but never attached** | §3.7 promises the trace reaches Allure. Phase 6 wrote it to `target/traces/` only, so a reviewer reading the report offline had the screenshot but not the trace | `PlaywrightExtension` now attaches the zip as well. Verified in the generated report: 116 `text/html` request/response attachments, 1 `image/png`, 1 `application/zip` |
 | **Parallelism is worth about 3×** | The claim needed a number, not an adjective | Measured on this machine: **83.4 s** sequential against **29.6 / 28.8 / 27.3 s** at `parallelism = 4`. README material |
 | **`mvn allure:report` self-installs the renderer** | It unpacks allure-commandline 2.46.1 into `.allure/` on first use — no global Allure CLI, which is what makes the bonus report reproducible from a cold clone | `.allure/` was already in `.gitignore` |
+
+### 11.1k Records conversion (2026-09-21)
+
+Audited every type in the project against the record criteria — immutable, no superclass, no
+state beyond its components — and converted the **14** that qualified. Verified by the compiler
+and by a green 41/41, not by inspection.
+
+| Converted | Kept as a class, and why |
+|---|---|
+| All 14 pojos: `AuthRequest` · `AuthResponse` · `Booking` · `BookingDates` · `BookingResponse` · `Character` · `CharactersPage` · `Episode` · `GraphQlError` (+ nested `Location`) · `GraphQlRequest` · `Info` · `Employee` · `Student` | **`ResponseWrapper`** — its private constructor plus `of()` factory exist so that *every* construction logs the response. A record's canonical constructor cannot be less accessible than the record, so converting would expose an unlogged `new ResponseWrapper(...)` **and** leak the wrapped REST Assured `Response` through a generated `response()` accessor, defeating the encapsulation the wrapper exists for |
+| *(`GuestNameCase` and `BrowserShutdown` were already records)* | **`CustomLogger`** — same shape, same objection: `logger()` would leak the SLF4J `Logger` |
+| | **`AuthEndpoints` / `BookingEndpoints` / `GraphQlEndpoints`** — stateless. A zero-component record is legal but buys nothing |
+| | Clients, pages, components, config, extensions — mutable state, inheritance, or both |
+
+Three findings worth keeping:
+
+- **Jackson needs no help with records.** It binds to the canonical constructor, and
+  `@JsonNaming(LowerCaseStrategy)` is applied to record components exactly as it was to Lombok
+  fields. Proved by removing `@Jacksonized` from `Booking` and `BookingDates` and watching the
+  27 API tests stay green. **This dissolves the §8 risk** *"Lombok `@Builder` + Jackson → silent
+  null fields"*: there is no builder left for Jackson to fail to populate. `lombok.config`'s
+  `lombok.jacksonized.jacksonVersion = 2` pin went with it — the Jackson 2/3 ambiguity warning it
+  suppressed only ever came from `@Jacksonized` — and the build is still warning-free.
+- **Lombok `@Builder(toBuilder = true)` works on a record** in 1.18.48, which is what let
+  `Booking`, `Student` and `Employee` keep the `toBuilder()` the tests use for one-field variants.
+- **The rename is the whole cost, and the compiler priced it**: 93 call sites moved from
+  `getX()` to `x()`. It had to be driven off compiler positions rather than a find-and-replace,
+  because `PracticeFormPage` exposes `@Getter` locators under the *same* names — `form.getFirstName()`
+  returns a `Locator` while `student.getFirstName()` was the pojo. A textual replace would have
+  silently broken the page object; 92 were fixed from javac's file/line/column and the last one
+  was a `Character::getId` method reference, which has no `.get…()` form to match.
 
 ### 11.2 Live service contracts
 

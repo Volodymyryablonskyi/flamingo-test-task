@@ -36,8 +36,8 @@ class BookingCrudTest extends BaseRestTest {
 
         BookingResponse created = anExistingBooking(request);
 
-        assertThat(created.getBookingId()).isNotNull().isPositive();
-        assertThat(created.getBooking()).usingRecursiveComparison().isEqualTo(request);
+        assertThat(created.bookingId()).isNotNull().isPositive();
+        assertThat(created.booking()).usingRecursiveComparison().isEqualTo(request);
     }
 
     @Test
@@ -48,10 +48,10 @@ class BookingCrudTest extends BaseRestTest {
     void shouldRetrieveCreatedBookingById() {
         BookingResponse created = anExistingBooking();
 
-        bookingClient.getById(created.getBookingId())
+        bookingClient.getById(created.bookingId())
                 .verify()
                 .hasStatusCode(STATUS_200_OK)
-                .hasBodyEqualTo(Booking.class, created.getBooking());
+                .hasBodyEqualTo(Booking.class, created.booking());
     }
 
     @Test
@@ -64,7 +64,7 @@ class BookingCrudTest extends BaseRestTest {
                 .firstname("Replaced")
                 .lastname(BookingDataGenerator.uniqueLastName())
                 .totalPrice(4_242)
-                .depositPaid(!created.getBooking().getDepositPaid())
+                .depositPaid(!created.booking().depositPaid())
                 .bookingDates(BookingDates.builder()
                         .checkin(LocalDate.of(2027, 3, 1))
                         .checkout(LocalDate.of(2027, 3, 8))
@@ -72,12 +72,12 @@ class BookingCrudTest extends BaseRestTest {
                 .additionalNeeds("Airport transfer")
                 .build();
 
-        bookingClient.update(created.getBookingId(), replacement)
+        bookingClient.update(created.bookingId(), replacement)
                 .verify()
                 .hasStatusCode(STATUS_200_OK)
                 .hasBodyEqualTo(Booking.class, replacement);
 
-        bookingClient.getById(created.getBookingId())
+        bookingClient.getById(created.bookingId())
                 .verify()
                 .hasStatusCode(STATUS_200_OK)
                 .hasBodyEqualTo(Booking.class, replacement);
@@ -90,15 +90,15 @@ class BookingCrudTest extends BaseRestTest {
     void shouldRejectUpdateWithoutAuthToken() {
         BookingResponse created = anExistingBooking();
 
-        unauthenticatedBookingClient.update(created.getBookingId(), BookingDataGenerator.validBooking())
+        unauthenticatedBookingClient.update(created.bookingId(), BookingDataGenerator.validBooking())
                 .verify()
                 .hasStatusCode(STATUS_403_FORBIDDEN)
                 .hasBodyEqualTo("Forbidden");
 
-        bookingClient.getById(created.getBookingId())
+        bookingClient.getById(created.bookingId())
                 .verify()
                 .hasStatusCode(STATUS_200_OK)
-                .hasBodyEqualTo(Booking.class, created.getBooking());
+                .hasBodyEqualTo(Booking.class, created.booking());
     }
 
     @Test
@@ -107,12 +107,12 @@ class BookingCrudTest extends BaseRestTest {
     @DisplayName("patches named fields and leaves the rest untouched")
     void shouldPartiallyUpdateBooking() {
         BookingResponse created = anExistingBooking();
-        Booking expected = created.getBooking().toBuilder()
+        Booking expected = created.booking().toBuilder()
                 .firstname("Patched")
                 .totalPrice(777)
                 .build();
 
-        bookingClient.partiallyUpdate(created.getBookingId(),
+        bookingClient.partiallyUpdate(created.bookingId(),
                         Map.of("firstname", "Patched", "totalprice", 777))
                 .verify()
                 .hasStatusCode(STATUS_200_OK)
@@ -126,7 +126,7 @@ class BookingCrudTest extends BaseRestTest {
     @DisplayName("deletes a booking, after which it is really gone")
     void shouldDeleteBookingAndReturn404OnSubsequentGet() {
         BookingResponse created = anExistingBooking();
-        int id = created.getBookingId();
+        int id = created.bookingId();
 
         bookingClient.delete(id).verify().hasStatusCode(STATUS_201_CREATED);
         forget(id);
@@ -148,12 +148,12 @@ class BookingCrudTest extends BaseRestTest {
         BookingResponse created = anExistingBooking(
                 BookingDataGenerator.bookingStaying(checkIn, checkOut));
 
-        BookingDates stored = bookingClient.getById(created.getBookingId())
+        BookingDates stored = bookingClient.getById(created.bookingId())
                 .verify().hasStatusCode(STATUS_200_OK)
                 .and().asPojo(Booking.class)
-                .getBookingDates();
+                .bookingDates();
 
-        assertThat(stored.getCheckin()).isEqualTo(checkIn);
-        assertThat(stored.getCheckout()).isEqualTo(checkOut);
+        assertThat(stored.checkin()).isEqualTo(checkIn);
+        assertThat(stored.checkout()).isEqualTo(checkOut);
     }
 }

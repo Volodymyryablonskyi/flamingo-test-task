@@ -49,7 +49,7 @@ class WebTablesTest extends BaseUiTest {
         table.addRecord(employee);
 
         assertThat(table.getRows()).hasCount(SEEDED_ROWS + 1);
-        Assertions.assertThat(table.cellsOf(employee.getLastName()))
+        Assertions.assertThat(table.cellsOf(employee.lastName()))
                 .containsExactlyElementsOf(appendActionColumn(employee));
     }
 
@@ -62,9 +62,9 @@ class WebTablesTest extends BaseUiTest {
         table.addRecord(employee);
 
         Employee edited = employee.toBuilder().department("Rewritten").build();
-        table.editRecordContaining(employee.getLastName()).fillAndSubmit(edited);
+        table.editRecordContaining(employee.lastName()).fillAndSubmit(edited);
 
-        Assertions.assertThat(table.cellsOf(edited.getLastName()))
+        Assertions.assertThat(table.cellsOf(edited.lastName()))
                 .containsExactlyElementsOf(appendActionColumn(edited));
         assertThat(table.getRows()).hasCount(SEEDED_ROWS + 1);
     }
@@ -78,10 +78,10 @@ class WebTablesTest extends BaseUiTest {
         table.addRecord(employee);
         assertThat(table.getRows()).hasCount(SEEDED_ROWS + 1);
 
-        table.deleteRecordContaining(employee.getLastName());
+        table.deleteRecordContaining(employee.lastName());
 
         assertThat(table.getRows()).hasCount(SEEDED_ROWS);
-        assertThat(table.rowContaining(employee.getLastName())).hasCount(0);
+        assertThat(table.rowContaining(employee.lastName())).hasCount(0);
     }
 
     @ParameterizedTest(name = "{0} matches {1} row(s)")

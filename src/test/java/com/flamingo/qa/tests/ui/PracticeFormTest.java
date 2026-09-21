@@ -48,16 +48,16 @@ class PracticeFormTest extends BaseUiTest {
 
         SoftAssertions.assertSoftly(soft -> {
             soft.assertThat(submitted.get("Student Name")).isEqualTo(student.fullName());
-            soft.assertThat(submitted.get("Student Email")).isEqualTo(student.getEmail());
-            soft.assertThat(submitted.get("Gender")).isEqualTo(student.getGender());
-            soft.assertThat(submitted.get("Mobile")).isEqualTo(student.getMobile());
+            soft.assertThat(submitted.get("Student Email")).isEqualTo(student.email());
+            soft.assertThat(submitted.get("Gender")).isEqualTo(student.gender());
+            soft.assertThat(submitted.get("Mobile")).isEqualTo(student.mobile());
             soft.assertThat(submitted.get("Date of Birth")).isEqualTo("15 June,1995");
-            soft.assertThat(submitted.get("Subjects")).isEqualTo(student.getSubject());
-            soft.assertThat(submitted.get("Hobbies")).isEqualTo(student.getHobby());
-            soft.assertThat(submitted.get("Picture")).isEqualTo(student.getPictureName());
-            soft.assertThat(submitted.get("Address")).isEqualTo(student.getCurrentAddress());
+            soft.assertThat(submitted.get("Subjects")).isEqualTo(student.subject());
+            soft.assertThat(submitted.get("Hobbies")).isEqualTo(student.hobby());
+            soft.assertThat(submitted.get("Picture")).isEqualTo(student.pictureName());
+            soft.assertThat(submitted.get("Address")).isEqualTo(student.currentAddress());
             soft.assertThat(submitted.get("State and City"))
-                    .isEqualTo(student.getState() + " " + student.getCity());
+                    .isEqualTo(student.state() + " " + student.city());
         });
     }
 
