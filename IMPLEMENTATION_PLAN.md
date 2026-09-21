@@ -11,7 +11,7 @@
 
 > ### ▶ Resume point — last updated 2026-09-20
 >
-> **Phases 0–7 are COMPLETE**, on the `spribe_api_test` / `avenga-api-test` architecture
+> **Phases 0–8 are COMPLETE**, on the `spribe_api_test` / `avenga-api-test` architecture
 > (§3.2). API work is done (19 REST + 8 GraphQL, against minimums of 3 and 5) and the UI
 > suite is in: `-Dgroups=ui` → **15 green headless and headed**, covering the practice form
 > (date picker, subjects autocomplete, file upload, React-Select state→city cascade, modal
@@ -20,7 +20,9 @@
 >
 > **No git remote is configured and nothing has been pushed yet.**
 >
-> **Next: Phase 8** — reporting and parallelism (§9).
+> **Next: Phase 9** — CI workflow and the README (§9). `mvn clean test` → **42 green in ~28 s**
+> at `parallelism = 4`; `mvn allure:report` renders with request/response, screenshot and
+> trace attachments.
 >
 > Outstanding manual steps for the user: re-import the project in IntelliJ as a Maven project
 > (the old `.iml` was deleted), and run `gh auth login` before the repo can be created.
@@ -542,7 +544,7 @@ development process" is satisfied structurally, not retroactively. ~8.5 h.
 | **5** ✅ | GraphQL negative (5–8) | ✅ 8 GraphQL tests green against the **measured** contracts in §11.2, two of which the Phase 5 re-probe corrected | 0.5 h | `test(graphql): assert error contracts for invalid queries` |
 | **6** ✅ | UI framework | ✅ all of it, plus screenshot **and** trace proved on an induced failure — a phase early | 1.0 h | `feat(ui): add playwright page-object framework with failure capture` |
 | **7** ✅ | UI tests (1–9) | ✅ 15 UI executions (9 methods + params, plus the Phase 6 smoke) green headless **and** headed; zero `Thread.sleep` in UI code; 81 KB screenshot + 2.1 MB trace re-proved on an induced failure | 2.0 h | `test(ui): cover practice form and web tables via page objects` |
-| **8** | Reporting + parallelism | `mvn allure:serve` shows request/response + screenshot attachments; 3 consecutive parallel runs stable | 0.5 h | `ci: enable allure reporting and parallel execution` |
+| **8** ✅ | Reporting + parallelism | ✅ report renders 116 request/response, 1 screenshot and 1 trace attachment; 3 consecutive parallel runs green at 29.6 / 28.8 / 27.3 s against 83.4 s sequential | 0.5 h | `ci: enable allure reporting and parallel execution` |
 | **9** | CI + documentation | Actions green on push/PR; README complete; §7 traceability ticked; screenshots in `docs/report-screenshots/` | 0.5 h | `docs: add readme, ci workflow and execution report` |
 
 Phases 4–5 dropped an hour versus the first draft: the endpoint question is now settled and the
@@ -751,6 +753,18 @@ Bootstrap 5 + a plain `<table>`, which invalidates several widely-copied locator
 `#userNumber` is `type="text"` with `pattern="\d*" minlength="10" maxlength="10"`, so the
 parameterised mobile cases (`123`, `abcdefghij`, empty) all fill cleanly and are rejected by
 constraint validation rather than by the input refusing the keystrokes.
+
+### 11.1j Phase 8 findings
+
+Reporting and parallelism were already wired in Phase 1, so this phase was mostly *proving*
+them — which is exactly what turned up the suite's only real flake.
+
+| Finding | Why it matters | Handling |
+|---|---|---|
+| **An unscoped `getByRole(OPTION)` is ambiguous on the practice form** | A native `<select>`'s `<option>` elements carry the implicit `option` role, so while the date picker is open the page holds **213** of them — its month and year dropdowns. `selectSubject` used `page.getByRole(OPTION).first()`, which therefore resolved to `<option value="0">January</option>` whenever the picker had not finished closing. That element is inside a closed `<select>` and can never be clicked, so the test burned the full 15 s timeout. Under 4-way parallelism the picker closes more slowly and the race widens — it failed **1 run in 3** | Every react-select lookup is scoped to its own container (`#subjectsContainer`, `#state`, `#city`, where react-select renders its menu inline rather than in a portal) and matches the option by **exact accessible name** instead of `.first()`. Three consecutive parallel runs green afterwards |
+| **The trace was written but never attached** | §3.7 promises the trace reaches Allure. Phase 6 wrote it to `target/traces/` only, so a reviewer reading the report offline had the screenshot but not the trace | `PlaywrightExtension` now attaches the zip as well. Verified in the generated report: 116 `text/html` request/response attachments, 1 `image/png`, 1 `application/zip` |
+| **Parallelism is worth about 3×** | The claim needed a number, not an adjective | Measured on this machine: **83.4 s** sequential against **29.6 / 28.8 / 27.3 s** at `parallelism = 4`. README material |
+| **`mvn allure:report` self-installs the renderer** | It unpacks allure-commandline 2.46.1 into `.allure/` on first use — no global Allure CLI, which is what makes the bonus report reproducible from a cold clone | `.allure/` was already in `.gitignore` |
 
 ### 11.2 Live service contracts
 

@@ -31,6 +31,7 @@ public class PracticeFormPage extends BasePage {
     private final Locator dateOfBirthInput = page.locator("#dateOfBirthInput");
     private final Locator monthSelect = page.locator(".react-datepicker__month-select");
     private final Locator yearSelect = page.locator(".react-datepicker__year-select");
+    private final Locator subjectsContainer = page.locator("#subjectsContainer");
     private final Locator subjectsInput = page.locator("#subjectsInput");
     private final Locator uploadPicture = page.locator("#uploadPicture");
     private final Locator currentAddress = page.locator("#currentAddress");
@@ -101,16 +102,21 @@ public class PracticeFormPage extends BasePage {
 
     private void selectSubject(String subject) {
         subjectsInput.fill(subject);
-        page.getByRole(AriaRole.OPTION).first().click();
+        option(subjectsContainer, subject).click();
     }
 
     private void selectStateAndCity(Student student) {
         stateContainer.click();
         stateInput.fill(student.getState());
-        page.getByRole(AriaRole.OPTION).first().click();
+        option(stateContainer, student.getState()).click();
 
         cityContainer.click();
         cityInput.fill(student.getCity());
-        page.getByRole(AriaRole.OPTION).first().click();
+        option(cityContainer, student.getCity()).click();
+    }
+
+    private static Locator option(Locator container, String name) {
+        return container.getByRole(AriaRole.OPTION,
+                new Locator.GetByRoleOptions().setName(name).setExact(true));
     }
 }

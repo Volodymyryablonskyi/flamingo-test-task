@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -96,10 +97,17 @@ public class PlaywrightExtension implements BeforeEachCallback, AfterEachCallbac
             }
             Files.createDirectories(TRACE_DIR);
             browserContext.tracing().stop(new Tracing.StopOptions().setPath(traceFile));
+            attach(traceFile);
             log.warn("Trace written to {} - open it with: npx playwright show-trace {}",
                     traceFile, traceFile);
         } catch (IOException | RuntimeException e) {
             log.warn("Could not save the Playwright trace: {}", e.toString());
+        }
+    }
+
+    private static void attach(Path traceFile) throws IOException {
+        try (InputStream trace = Files.newInputStream(traceFile)) {
+            Allure.addAttachment(traceFile.getFileName().toString(), "application/zip", trace, ".zip");
         }
     }
 
