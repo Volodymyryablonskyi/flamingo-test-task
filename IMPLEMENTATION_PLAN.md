@@ -11,7 +11,7 @@
 
 > ### ▶ Resume point — last updated 2026-09-20
 >
-> **Phases 0–8 are COMPLETE**, on the `spribe_api_test` / `avenga-api-test` architecture
+> **Phases 0–9 are COMPLETE**, on the `spribe_api_test` / `avenga-api-test` architecture
 > (§3.2). API work is done (19 REST + 8 GraphQL, against minimums of 3 and 5) and the UI
 > suite is in: `-Dgroups=ui` → **15 green headless and headed**, covering the practice form
 > (date picker, subjects autocomplete, file upload, React-Select state→city cascade, modal
@@ -20,9 +20,12 @@
 >
 > **No git remote is configured and nothing has been pushed yet.**
 >
-> **Next: Phase 9** — CI workflow and the README (§9). `mvn clean test` → **42 green in ~28 s**
-> at `parallelism = 4`; `mvn allure:report` renders with request/response, screenshot and
-> trace attachments.
+> **All nine phases are done.** `mvn clean test` → **42 green in ~28 s** at `parallelism = 4`;
+> `mvn allure:report` renders with request/response, screenshot and trace attachments; README
+> and `.github/workflows/ci.yml` are written; §7 traceability is fully ticked.
+>
+> **The one open item is the remote**: the CI workflow has never run, because there is nowhere
+> to push it. Everything else in §10 is verified.
 >
 > Outstanding manual steps for the user: re-import the project in IntelliJ as a Maven project
 > (the old `.iml` was deleted), and run `gh auth login` before the repo can be created.
@@ -480,7 +483,7 @@ the browser extension across both is the clearest possible demonstration of POM.
 
 ## 7. Requirements traceability
 
-Proves nothing in the brief was missed. Checked off during Phase 9.
+Proves nothing in the brief was missed - checked off in Phase 9. **Every row is satisfied.**
 
 | Brief requirement | Satisfied by |
 |---|---|
@@ -492,17 +495,17 @@ Proves nothing in the brief was missed. Checked off during Phase 9.
 | UI: Playwright | §4 |
 | UI: Page Object Model | `ui/pages/**` + components (§3.7) |
 | UI: dynamic waits handled properly | auto-wait + web-first assertions; `Thread.sleep` banned (§3.7) |
-| UI: screenshots of failures | `ScreenshotOnFailureExtension` + traces (§3.7) |
+| UI: screenshots of failures | `PlaywrightExtension` + traces (§3.7, corrected in §11.1h); proved on an induced failure |
 | AssertJ assertions | §3.8 — AssertJ only, `SoftAssertions` for multi-field |
 | Jackson | models + GraphQL ser/de (§3.5, §3.6) |
-| Allure *(bonus)* | §4, Phase 8 |
+| Allure *(bonus)* | §4, Phase 8; `AllureEnvironmentListener` fills the Environment widget |
 | Lombok *(bonus)* | `@Value @Builder @Jacksonized` (§3.5) |
 | Clear package structure | §3.3 |
-| `.gitignore` | Phase 0 |
+| `.gitignore` | Phase 0; `.playwright-mcp/` added in Phase 7 |
 | `pom.xml` with all dependencies | §4 |
-| README (all 4 required sections) | Phase 9 |
-| Test report | Allure + surefire HTML + `docs/report-screenshots/` |
-| CI/CD *(bonus)* | Phase 9 |
+| README (all 4 required sections) | `README.md` — Prerequisites · How to Run · Test Strategy · Challenges & Solutions · What I Would Add |
+| Test report | Allure (`mvn allure:serve`) + `mvn surefire-report:report-only` + 3 screenshots in `docs/report-screenshots/` |
+| CI/CD *(bonus)* | `.github/workflows/ci.yml` — api-tests / ui-tests / report, no secrets |
 | Data-driven tests *(nice)* | 6.1/10, 6.3/3, 6.3/7 |
 | Custom waits / retry logic *(nice)* | `TransientFailureRetryFilter` (§3.5); custom waits (§3.7) |
 | Parallel execution *(nice)* | §3.9 |
@@ -545,7 +548,7 @@ development process" is satisfied structurally, not retroactively. ~8.5 h.
 | **6** ✅ | UI framework | ✅ all of it, plus screenshot **and** trace proved on an induced failure — a phase early | 1.0 h | `feat(ui): add playwright page-object framework with failure capture` |
 | **7** ✅ | UI tests (1–9) | ✅ 15 UI executions (9 methods + params, plus the Phase 6 smoke) green headless **and** headed; zero `Thread.sleep` in UI code; 81 KB screenshot + 2.1 MB trace re-proved on an induced failure | 2.0 h | `test(ui): cover practice form and web tables via page objects` |
 | **8** ✅ | Reporting + parallelism | ✅ report renders 116 request/response, 1 screenshot and 1 trace attachment; 3 consecutive parallel runs green at 29.6 / 28.8 / 27.3 s against 83.4 s sequential | 0.5 h | `ci: enable allure reporting and parallel execution` |
-| **9** | CI + documentation | Actions green on push/PR; README complete; §7 traceability ticked; screenshots in `docs/report-screenshots/` | 0.5 h | `docs: add readme, ci workflow and execution report` |
+| **9** ✅ | CI + documentation | ✅ workflow written (3 jobs, no secrets); README complete against the brief's template; §7 traceability fully ticked; 3 report screenshots captured. **Actions cannot be verified green until a remote exists** | 0.5 h | `docs: add readme, ci workflow and execution report` |
 
 Phases 4–5 dropped an hour versus the first draft: the endpoint question is now settled and the
 error contracts are already measured, so implementation is transcription rather than discovery.
@@ -579,17 +582,19 @@ Follow the brief's template verbatim, with substantive free text:
 
 ## 10. Definition of done
 
-- [ ] `mvn clean test` green from a **cold clone**, JDK + Maven only, **no secrets, no setup**
-- [ ] `mvn test -Dgroups="api"` and `-Dgroups="ui"` each run the correct subset
-- [ ] ≥10 REST · ≥8 GraphQL · ≥9 UI, all meaningfully asserting (no `assertTrue(true)`)
-- [ ] Every assertion via AssertJ; multi-field checks use `SoftAssertions`
-- [ ] Zero `Thread.sleep`, zero hardcoded URLs/credentials, zero committed secrets
-- [ ] Screenshot **and** trace produced on an induced UI failure (demonstrated, not assumed)
-- [ ] Allure report renders with request/response and screenshot attachments
-- [ ] GitHub Actions green **on a fork**, artifacts downloadable
-- [ ] README complete, all four sections filled with real content
-- [ ] §7 traceability matrix fully ticked
-- [ ] Commit history tells the story of §9, minimum one commit per phase
+- [x] `mvn clean test` green from a **cold clone**, JDK + Maven only, **no secrets, no setup** — 42/42
+- [x] `mvn test -Dgroups="api"` → 27 and `-Dgroups="ui"` → 15, each the correct subset
+- [x] ≥10 REST · ≥8 GraphQL · ≥9 UI, all meaningfully asserting — 19 · 8 · 15, and the one
+      vacuous assertion found in review was replaced (§11.1i)
+- [x] Every assertion via AssertJ; multi-field checks use `SoftAssertions`
+- [x] Zero `Thread.sleep` in UI code, zero hardcoded URLs/credentials, zero committed secrets
+- [x] Screenshot **and** trace produced on an induced UI failure (demonstrated, not assumed) —
+      79 KB PNG + 1.9 MB trace, both attached to Allure
+- [x] Allure report renders with request/response, screenshot and trace attachments
+- [ ] GitHub Actions green **on a fork**, artifacts downloadable — **blocked: no remote exists**
+- [x] README complete, all sections of the brief's template filled with real content
+- [x] §7 traceability matrix fully ticked
+- [x] Commit history tells the story of §9, minimum one commit per phase
 
 ---
 
