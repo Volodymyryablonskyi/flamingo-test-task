@@ -19,7 +19,6 @@ public class PracticeFormPage extends BasePage {
     private static final DateTimeFormatter MONTH = DateTimeFormatter.ofPattern("MMMM", Locale.ENGLISH);
     private static final Locator.GetByTextOptions EXACT = new Locator.GetByTextOptions().setExact(true);
 
-    private final Locator heading = page.getByText("Student Registration Form");
     private final Locator userForm = page.locator("#userForm");
     private final Locator invalidFields = page.locator("#userForm input:invalid");
     private final Locator firstName = page.locator("#firstName");

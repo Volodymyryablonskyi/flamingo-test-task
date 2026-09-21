@@ -13,14 +13,14 @@
 >
 > **Phases 0–9 are COMPLETE**, on the `spribe_api_test` / `avenga-api-test` architecture
 > (§3.2). API work is done (19 REST + 8 GraphQL, against minimums of 3 and 5) and the UI
-> suite is in: `-Dgroups=ui` → **15 green headless and headed**, covering the practice form
+> suite is in: `-Dgroups=ui` → **14 green headless and headed**, covering the practice form
 > (date picker, subjects autocomplete, file upload, React-Select state→city cascade, modal
 > verified with `SoftAssertions`) and web-tables CRUD-over-a-grid. DemoQA has been rewritten
 > since the plan was drafted — see **§11.1i** before touching any UI locator.
 >
 > **No git remote is configured and nothing has been pushed yet.**
 >
-> **All nine phases are done.** `mvn clean test` → **42 green in ~28 s** at `parallelism = 4`;
+> **All nine phases are done.** `mvn clean test` → **41 green in ~28 s** at `parallelism = 4`;
 > `mvn allure:report` renders with request/response, screenshot and trace attachments; README
 > and `.github/workflows/ci.yml` are written; §7 traceability is fully ticked.
 >
@@ -315,17 +315,17 @@ too — matching the brief's own framing of GraphQL as Part 1 API testing.
 
 | Tag | Tests | Declared on |
 |---|---|---|
-| `regression` | 42 | `BaseApiTest` + `BaseUiTest` |
+| `regression` | 41 | `BaseApiTest` + `BaseUiTest` |
 | `api` | 27 | `BaseApiTest` |
 | `graphql` | 8 | `BaseGraphQlTest` |
-| `ui` | 15 | `BaseUiTest` |
-| `smoke` | 9 | individual methods |
+| `ui` | 14 | `BaseUiTest` |
+| `smoke` | 8 | individual methods |
 
 `regression` is declared on the two roots of the hierarchy, **not** repeated per class. JUnit
 inherits `@Tag` from superclasses, so a new test class is in the regression suite by construction
 rather than by someone remembering to tag it — which is the only way a "run everything" tag stays
 truthful as the suite grows. *(Added 2026-09-21 at Vladimir's request.)* It currently selects the
-same 42 tests as an unfiltered `mvn test`; its value is being the **stable name** for the full
+same 41 tests as an unfiltered `mvn test`; its value is being the **stable name** for the full
 suite once tags that should not run by default exist (`flaky`, `slow`, `wip`), at which point CI
 becomes `-Dgroups="regression & !wip"` and the default run stays honest.
 
@@ -562,7 +562,7 @@ development process" is satisfied structurally, not retroactively. ~8.5 h.
 | **4** ✅ | GraphQL client + positive (1–4) | ✅ 4 tests green; variables passed as a map; queries in `.graphql` files | 1.0 h | `test(graphql): add graphql client and positive query coverage` |
 | **5** ✅ | GraphQL negative (5–8) | ✅ 8 GraphQL tests green against the **measured** contracts in §11.2, two of which the Phase 5 re-probe corrected | 0.5 h | `test(graphql): assert error contracts for invalid queries` |
 | **6** ✅ | UI framework | ✅ all of it, plus screenshot **and** trace proved on an induced failure — a phase early | 1.0 h | `feat(ui): add playwright page-object framework with failure capture` |
-| **7** ✅ | UI tests (1–9) | ✅ 15 UI executions (9 methods + params, plus the Phase 6 smoke) green headless **and** headed; zero `Thread.sleep` in UI code; 81 KB screenshot + 2.1 MB trace re-proved on an induced failure | 2.0 h | `test(ui): cover practice form and web tables via page objects` |
+| **7** ✅ | UI tests (1–9) | ✅ 14 UI executions (9 methods + parameterised cases) green headless **and** headed; zero `Thread.sleep` in UI code; 81 KB screenshot + 2.1 MB trace re-proved on an induced failure | 2.0 h | `test(ui): cover practice form and web tables via page objects` |
 | **8** ✅ | Reporting + parallelism | ✅ report renders 116 request/response, 1 screenshot and 1 trace attachment; 3 consecutive parallel runs green at 29.6 / 28.8 / 27.3 s against 83.4 s sequential | 0.5 h | `ci: enable allure reporting and parallel execution` |
 | **9** ✅ | CI + documentation | ✅ workflow written (3 jobs, no secrets); README complete against the brief's template; §7 traceability fully ticked; 3 report screenshots captured. **Actions cannot be verified green until a remote exists** | 0.5 h | `docs: add readme, ci workflow and execution report` |
 
@@ -598,9 +598,9 @@ Follow the brief's template verbatim, with substantive free text:
 
 ## 10. Definition of done
 
-- [x] `mvn clean test` green from a **cold clone**, JDK + Maven only, **no secrets, no setup** — 42/42
-- [x] `mvn test -Dgroups="api"` → 27 and `-Dgroups="ui"` → 15, each the correct subset
-- [x] ≥10 REST · ≥8 GraphQL · ≥9 UI, all meaningfully asserting — 19 · 8 · 15, and the one
+- [x] `mvn clean test` green from a **cold clone**, JDK + Maven only, **no secrets, no setup** — 41/41
+- [x] `mvn test -Dgroups="api"` → 27 and `-Dgroups="ui"` → 14, each the correct subset
+- [x] ≥10 REST · ≥8 GraphQL · ≥9 UI, all meaningfully asserting — 19 · 8 · 14, and the one
       vacuous assertion found in review was replaced (§11.1i)
 - [x] Every assertion via AssertJ; multi-field checks use `SoftAssertions`
 - [x] Zero `Thread.sleep` in UI code, zero hardcoded URLs/credentials, zero committed secrets

@@ -1,7 +1,7 @@
 # QA Automation Test Suite
 
 API (REST + GraphQL) and UI test suite for the Flamingo home assignment.
-**42 tests — 19 REST, 8 GraphQL, 15 UI — green from a cold clone with no setup and no secrets.**
+**41 tests — 19 REST, 8 GraphQL, 14 UI — green from a cold clone with no setup and no secrets.**
 
 | | |
 |---|---|
@@ -46,14 +46,14 @@ mvn clean test
 # Run only API tests  (REST + GraphQL = 27)
 mvn test -Dgroups="api"
 
-# Run only UI tests   (15)
+# Run only UI tests   (14)
 mvn test -Dgroups="ui"
 ```
 
 Useful variations:
 
 ```bash
-mvn test -Dgroups="regression"    # the full suite by tag — every test (42)
+mvn test -Dgroups="regression"    # the full suite by tag — every test (41)
 mvn test -Dgroups="graphql"       # GraphQL only — these carry both `graphql` and `api` tags
 mvn test -Dgroups="smoke"         # the critical path across all three layers
 mvn test -Dui.headless=false      # watch the UI suite drive a real browser
@@ -64,11 +64,11 @@ mvn allure:serve                  # open the Allure report (downloads the render
 
 | Tag | Tests | Selects |
 |---|---|---|
-| `regression` | 42 | **Every test.** The full suite, addressed by tag rather than by absence of a filter |
+| `regression` | 41 | **Every test.** The full suite, addressed by tag rather than by absence of a filter |
 | `api` | 27 | Everything that talks HTTP — REST **and** GraphQL |
 | `graphql` | 8 | The GraphQL subset only |
-| `ui` | 15 | The Playwright suite |
-| `smoke` | 9 | The critical path across all three layers |
+| `ui` | 14 | The Playwright suite |
+| `smoke` | 8 | The critical path across all three layers |
 
 Tags combine with JUnit's expression syntax, so the axes compose:
 
@@ -88,7 +88,7 @@ Two design points worth naming:
   GraphQL tests carry both — matching the brief's own framing of GraphQL as part of API testing.
   `-Dgroups="api"` therefore runs all 27, and `-Dgroups="graphql"` narrows to 8.
 
-`regression` and an unfiltered `mvn test` currently select the same 42 tests. The tag still earns
+`regression` and an unfiltered `mvn test` currently select the same 41 tests. The tag still earns
 its place: it is the stable name for "the full suite" once tags that should *not* run by default
 exist — `flaky`, `slow`, or a `wip` tag excluded via `-Dgroups="regression & !wip"`.
 
@@ -265,7 +265,7 @@ test that cannot fail is worse than no test.
 
 | | |
 |---|---|
-| [`allure-overview.png`](docs/report-screenshots/allure-overview.png) | 42 tests, 100% passed, with the effective configuration in the Environment widget |
+| [`allure-overview.png`](docs/report-screenshots/allure-overview.png) | 41 tests, 100% passed, with the effective configuration in the Environment widget |
 | [`allure-test-detail.png`](docs/report-screenshots/allure-test-detail.png) | `@Step` nesting, parameters, and the full request body / headers / curl attached to a booking test |
 | [`allure-failure-capture.png`](docs/report-screenshots/allure-failure-capture.png) | an **induced** failure, with the full-page screenshot and the Playwright trace attached |
 
