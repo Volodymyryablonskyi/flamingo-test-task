@@ -23,6 +23,7 @@ surefire-reports/
 /videos/
 playwright-report/
 .playwright/
+.playwright-mcp/
 
 ### Secrets & local config ###
 .env

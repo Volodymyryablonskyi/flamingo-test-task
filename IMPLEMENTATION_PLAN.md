@@ -11,18 +11,16 @@
 
 > ### ▶ Resume point — last updated 2026-09-20
 >
-> **Phases 0–6 are COMPLETE**, on the `spribe_api_test` / `avenga-api-test` architecture
-> (§3.2). Build is green: `mvn clean test` → **28/28**; `-Dgroups=ui` → 1. API work is done
-> (19 REST + 8 GraphQL, against minimums of 3 and 5) and the UI framework is up. 17 commits
-> on `main`, working tree clean.
+> **Phases 0–7 are COMPLETE**, on the `spribe_api_test` / `avenga-api-test` architecture
+> (§3.2). API work is done (19 REST + 8 GraphQL, against minimums of 3 and 5) and the UI
+> suite is in: `-Dgroups=ui` → **15 green headless and headed**, covering the practice form
+> (date picker, subjects autocomplete, file upload, React-Select state→city cascade, modal
+> verified with `SoftAssertions`) and web-tables CRUD-over-a-grid. DemoQA has been rewritten
+> since the plan was drafted — see **§11.1i** before touching any UI locator.
 >
 > **No git remote is configured and nothing has been pushed yet.**
 >
-> **Next: Phase 7** — the UI tests themselves (§6.3): `PracticeFormPage` filled out properly
-> (date picker, subjects autocomplete, file upload, React-Select state→city cascade, modal
-> verified with `SoftAssertions`) plus `WebTablesPage` for CRUD-over-a-grid. `PracticeFormPage`
-> currently exists only as the seed the smoke test needs. Work the §9 roadmap in order; each
-> phase ends in a green build plus a commit.
+> **Next: Phase 8** — reporting and parallelism (§9).
 >
 > Outstanding manual steps for the user: re-import the project in IntelliJ as a Maven project
 > (the old `.iml` was deleted), and run `gh auth login` before the repo can be created.
@@ -472,8 +470,8 @@ the browser extension across both is the clearest possible demonstration of POM.
 | 4 | `shouldAddNewRecordToTable` | P0 | + | create + row assertion |
 | 5 | `shouldEditExistingRecord` | P1 | + | update; other fields unchanged |
 | 6 | `shouldDeleteRecord` | P1 | + | delete + row count decremented |
-| 7 | `shouldFilterRecordsBySearchTerm` | P1 | +/− | `@ParameterizedTest` incl. the **"No rows found"** case |
-| 8 | `shouldSortRecordsByAgeAscendingAndDescending` | P1 | + | AssertJ `isSortedAccordingTo` on the extracted column |
+| 7 | `shouldFilterRecordsBySearchTerm` | P1 | +/− | `@ParameterizedTest` incl. the no-match case |
+| 8 | ~~`shouldSortRecordsByAgeAscendingAndDescending`~~ → `shouldPaginateRecordsBeyondThePageSize` | P1 | + | **Sorting no longer exists on DemoQA** (§11.1i). Replaced by the other grid control: page size, page indicator, Next/Previous enablement |
 | 9 | `shouldValidateRequiredFieldsInRegistrationForm` | P2 | − | submit the empty modal form |
 
 ---
@@ -543,7 +541,7 @@ development process" is satisfied structurally, not retroactively. ~8.5 h.
 | **4** ✅ | GraphQL client + positive (1–4) | ✅ 4 tests green; variables passed as a map; queries in `.graphql` files | 1.0 h | `test(graphql): add graphql client and positive query coverage` |
 | **5** ✅ | GraphQL negative (5–8) | ✅ 8 GraphQL tests green against the **measured** contracts in §11.2, two of which the Phase 5 re-probe corrected | 0.5 h | `test(graphql): assert error contracts for invalid queries` |
 | **6** ✅ | UI framework | ✅ all of it, plus screenshot **and** trace proved on an induced failure — a phase early | 1.0 h | `feat(ui): add playwright page-object framework with failure capture` |
-| **7** | UI tests (1–9) | 9 UI tests green headless **and** headed; zero `Thread.sleep`; screenshot verified on an **induced** failure | 2.0 h | `test(ui): cover practice form and web tables via page objects` |
+| **7** ✅ | UI tests (1–9) | ✅ 15 UI executions (9 methods + params, plus the Phase 6 smoke) green headless **and** headed; zero `Thread.sleep` in UI code; 81 KB screenshot + 2.1 MB trace re-proved on an induced failure | 2.0 h | `test(ui): cover practice form and web tables via page objects` |
 | **8** | Reporting + parallelism | `mvn allure:serve` shows request/response + screenshot attachments; 3 consecutive parallel runs stable | 0.5 h | `ci: enable allure reporting and parallel execution` |
 | **9** | CI + documentation | Actions green on push/PR; README complete; §7 traceability ticked; screenshots in `docs/report-screenshots/` | 0.5 h | `docs: add readme, ci workflow and execution report` |
 
@@ -736,6 +734,23 @@ i.e. the §11.1f token fix firing and keeping the suite green. Two consequences 
 - `ResponseSpecs`, which used to impose a 30 s total-duration ceiling, went away when the
   clients moved to `ResponseWrapper`. Nothing guards total duration now. Deliberate for the
   same reason, and recorded here so the removal is not mistaken for an oversight.
+
+### 11.1i Phase 7 findings — DemoQA has been rewritten; the planned locators no longer hold
+
+Re-probed live on **2026-09-21**. DemoQA has migrated from Bootstrap 4 + ReactTable to
+Bootstrap 5 + a plain `<table>`, which invalidates several widely-copied locators.
+
+| Finding | Why it matters | Handling |
+|---|---|---|
+| **`Pattern.quote` cannot be used in a Playwright `hasText` regex** | Playwright serialises a Java `Pattern` into a **JavaScript** `RegExp`. JS has no `\Q…\E` quoting, so `^\QOther\E$` compiles to a pattern matching the literal `QOtherE` — it silently matches nothing and the click dies on a 15 s actionability timeout with a misleading "waiting for locator" log | Gender/hobby resolve through `genderGroup.getByText(label, setExact(true))` scoped to `#genterWrapper` / `#hobbiesWrapper`. Exact-text matching also avoids the trap that `"Male"` is a substring of `"Female"`, which a plain `setHasText(String)` would hit |
+| **The web table no longer sorts** | Planned test 8 asserted `isSortedAccordingTo` after clicking the Age header. The rewritten markup is `<th style="width: 40px;">Age</th>` — no class, no `aria-sort`, no handler. Measured: clicking it three times left the column at `39, 45, 29` | Test 8 replaced by `shouldPaginateRecordsBeyondThePageSize`, the grid control DemoQA *does* have: 8 added records push the table to 11 rows → page 1 holds 10 with Previous disabled and the indicator reading `1 of 2`; Next leaves 1 row with Next disabled; `Show 20` collapses back to `1 of 1` with all 11 |
+| **There is no "No rows found" message** | §6.3 test 7 expected it. The rewritten table simply empties `<tbody>` | The parameterised case asserts `hasCount(0)` for `NoSuchRecordAnywhere`, which is what the page actually does |
+| **Gender/hobby labels are `form-check-label`, not `custom-control-label`** | Every tutorial locator for this page is Bootstrap 4 | Locators key off `label[for^=…]` inside the wrapper, so the class change is irrelevant |
+| **Empty submit marks `#userForm` `was-validated` and leaves 6 `input:invalid`** | The original assertion (`not().hasAttribute("class", "is-valid")`) passed vacuously — that class is never applied, so it would also pass on a page that submitted successfully | Asserts `hasClass("was-validated")` and `not().hasCount(0)` on `#userForm input:invalid` — both are states the page actually reaches only on rejection |
+
+`#userNumber` is `type="text"` with `pattern="\d*" minlength="10" maxlength="10"`, so the
+parameterised mobile cases (`123`, `abcdefghij`, empty) all fill cleanly and are rejected by
+constraint validation rather than by the input refusing the keystrokes.
 
 ### 11.2 Live service contracts
 
