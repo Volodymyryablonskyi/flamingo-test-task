@@ -10,6 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @Epic("UI - DemoQA")
 @Tag("ui")
+@Tag("regression")
 @RequiresService(SystemUnderTest.DEMOQA)
 @ExtendWith(PlaywrightExtension.class)
 public abstract class BaseUiTest {

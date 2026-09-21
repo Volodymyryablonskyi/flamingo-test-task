@@ -53,11 +53,44 @@ mvn test -Dgroups="ui"
 Useful variations:
 
 ```bash
+mvn test -Dgroups="regression"    # the full suite by tag — every test (42)
 mvn test -Dgroups="graphql"       # GraphQL only — these carry both `graphql` and `api` tags
 mvn test -Dgroups="smoke"         # the critical path across all three layers
 mvn test -Dui.headless=false      # watch the UI suite drive a real browser
 mvn allure:serve                  # open the Allure report (downloads the renderer on first use)
 ```
+
+### Tags
+
+| Tag | Tests | Selects |
+|---|---|---|
+| `regression` | 42 | **Every test.** The full suite, addressed by tag rather than by absence of a filter |
+| `api` | 27 | Everything that talks HTTP — REST **and** GraphQL |
+| `graphql` | 8 | The GraphQL subset only |
+| `ui` | 15 | The Playwright suite |
+| `smoke` | 9 | The critical path across all three layers |
+
+Tags combine with JUnit's expression syntax, so the axes compose:
+
+```bash
+mvn test -Dgroups="regression & !ui"        # the whole suite minus the browser
+mvn test -Dgroups="smoke | graphql"         # union
+```
+
+Two design points worth naming:
+
+- **`regression` is inherited, not repeated.** It sits on `BaseApiTest` and `BaseUiTest`, and
+  JUnit inherits `@Tag` from superclasses — so every test class picks it up through the hierarchy
+  it already extends. Nothing has to be remembered when a test is added: a new class extending a
+  base is in the regression suite by construction, which is the only way a "run everything" tag
+  stays honest.
+- **`api` and `graphql` overlap on purpose.** `BaseGraphQlTest extends BaseApiTest`, so the
+  GraphQL tests carry both — matching the brief's own framing of GraphQL as part of API testing.
+  `-Dgroups="api"` therefore runs all 27, and `-Dgroups="graphql"` narrows to 8.
+
+`regression` and an unfiltered `mvn test` currently select the same 42 tests. The tag still earns
+its place: it is the stable name for "the full suite" once tags that should *not* run by default
+exist — `flaky`, `slow`, or a `wip` tag excluded via `-Dgroups="regression & !wip"`.
 
 The Allure report needs no globally installed Allure CLI — `allure-maven` unpacks the renderer
 into `.allure/` on first run, so `mvn clean test` followed by `mvn allure:serve` works from a cold

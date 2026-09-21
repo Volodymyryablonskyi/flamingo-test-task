@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 
 @Tag("api")
+@Tag("regression")
 public abstract class BaseApiTest {
 
     @BeforeAll

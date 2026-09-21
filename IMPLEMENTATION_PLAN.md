@@ -308,10 +308,26 @@ Per principle #2, **step 3 alone is sufficient for a green run**. No key require
 
 ### 3.9 Tagging and parallelism
 
-Tags: `@Tag("api")`, `@Tag("graphql")`, `@Tag("ui")`, plus `@Tag("smoke")` on the critical path.
-Surefire is configured so `mvn test -Dgroups="api"` works verbatim as the README promises.
-GraphQL tests carry **both** `graphql` and `api`, so `-Dgroups="api"` runs them too — matching
-the brief's own framing of GraphQL as Part 1 API testing.
+Tags: `@Tag("regression")`, `@Tag("api")`, `@Tag("graphql")`, `@Tag("ui")`, plus `@Tag("smoke")`
+on the critical path. Surefire is configured so `mvn test -Dgroups="api"` works verbatim as the
+README promises. GraphQL tests carry **both** `graphql` and `api`, so `-Dgroups="api"` runs them
+too — matching the brief's own framing of GraphQL as Part 1 API testing.
+
+| Tag | Tests | Declared on |
+|---|---|---|
+| `regression` | 42 | `BaseApiTest` + `BaseUiTest` |
+| `api` | 27 | `BaseApiTest` |
+| `graphql` | 8 | `BaseGraphQlTest` |
+| `ui` | 15 | `BaseUiTest` |
+| `smoke` | 9 | individual methods |
+
+`regression` is declared on the two roots of the hierarchy, **not** repeated per class. JUnit
+inherits `@Tag` from superclasses, so a new test class is in the regression suite by construction
+rather than by someone remembering to tag it — which is the only way a "run everything" tag stays
+truthful as the suite grows. *(Added 2026-09-21 at Vladimir's request.)* It currently selects the
+same 42 tests as an unfiltered `mvn test`; its value is being the **stable name** for the full
+suite once tags that should not run by default exist (`flaky`, `slow`, `wip`), at which point CI
+becomes `-Dgroups="regression & !wip"` and the default run stays honest.
 
 `junit-platform.properties`:
 
