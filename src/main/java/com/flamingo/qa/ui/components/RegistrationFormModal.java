@@ -6,28 +6,20 @@ import com.microsoft.playwright.Page;
 import lombok.Getter;
 
 @Getter
-public class RegistrationFormModal {
+public class RegistrationFormModal extends BaseComponent {
 
-    private final Locator container;
-    private final Locator title;
-    private final Locator firstName;
-    private final Locator lastName;
-    private final Locator email;
-    private final Locator age;
-    private final Locator salary;
-    private final Locator department;
-    private final Locator submitButton;
+    private final Locator container = page.locator(".modal-content");
+    private final Locator title = page.locator("#registration-form-modal");
+    private final Locator firstName = page.locator("#firstName");
+    private final Locator lastName = page.locator("#lastName");
+    private final Locator email = page.locator("#userEmail");
+    private final Locator age = page.locator("#age");
+    private final Locator salary = page.locator("#salary");
+    private final Locator department = page.locator("#department");
+    private final Locator submitButton = page.locator("#submit");
 
     public RegistrationFormModal(Page page) {
-        this.container = page.locator(".modal-content");
-        this.title = page.locator("#registration-form-modal");
-        this.firstName = page.locator("#firstName");
-        this.lastName = page.locator("#lastName");
-        this.email = page.locator("#userEmail");
-        this.age = page.locator("#age");
-        this.salary = page.locator("#salary");
-        this.department = page.locator("#department");
-        this.submitButton = page.locator("#submit");
+        super(page);
     }
 
     public void fill(Employee employee) {

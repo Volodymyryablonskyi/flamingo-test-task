@@ -15,7 +15,6 @@ public class RequestBuilder {
 
     private final RequestSpecification spec;
     private final Map<String, Object> queryParams = new LinkedHashMap<>();
-    private final Map<String, String> headers = new LinkedHashMap<>();
 
     private HttpMethod method;
     private String path;
@@ -47,13 +46,6 @@ public class RequestBuilder {
         return this;
     }
 
-    public RequestBuilder withHeaders(Map<String, String> extraHeaders) {
-        if (extraHeaders != null) {
-            headers.putAll(extraHeaders);
-        }
-        return this;
-    }
-
     public ResponseWrapper send() {
         if (method == null || path == null) {
             throw new IllegalStateException("A request needs both a method and a path.");
@@ -64,9 +56,6 @@ public class RequestBuilder {
             RequestSpecification request = RestAssured.given().spec(spec);
             if (!queryParams.isEmpty()) {
                 request.queryParams(queryParams);
-            }
-            if (!headers.isEmpty()) {
-                request.headers(headers);
             }
             if (body != null) {
                 request.body(body);

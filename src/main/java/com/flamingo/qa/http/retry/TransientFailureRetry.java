@@ -1,16 +1,18 @@
 package com.flamingo.qa.http.retry;
 
 import com.flamingo.qa.config.Config;
+import com.flamingo.qa.http.response.StatusCode;
+import com.flamingo.qa.util.CustomLogger;
 import io.restassured.response.Response;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.function.Supplier;
 
 public final class TransientFailureRetry {
 
-    private static final Logger log = LoggerFactory.getLogger(TransientFailureRetry.class);
-    private static final int TOO_MANY_REQUESTS = 429;
+    private static final CustomLogger log = CustomLogger.getLogger(TransientFailureRetry.class);
+
+    private static final int TOO_MANY_REQUESTS = StatusCode.STATUS_429_TOO_MANY_REQUESTS.getCode();
+    private static final int LOWEST_SERVER_ERROR = StatusCode.STATUS_500_INTERNAL_SERVER_ERROR.getCode();
 
     private TransientFailureRetry() {
     }
@@ -44,7 +46,7 @@ public final class TransientFailureRetry {
     }
 
     private static boolean isTransient(int statusCode) {
-        return statusCode >= 500 || statusCode == TOO_MANY_REQUESTS;
+        return statusCode >= LOWEST_SERVER_ERROR || statusCode == TOO_MANY_REQUESTS;
     }
 
     private static RuntimeException asUnchecked(Exception failure, int attempts) {

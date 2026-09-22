@@ -8,25 +8,21 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Getter
-public class SubmissionModal {
+public class SubmissionModal extends BaseComponent {
 
-    private final Page page;
-    private final Locator container;
-    private final Locator title;
-    private final Locator rows;
+    private final Locator container = page.locator(".modal-content");
+    private final Locator title = page.locator("#example-modal-sizes-title-lg");
+    private final Locator rows = page.locator(".modal-body tbody tr");
 
     public SubmissionModal(Page page) {
-        this.page = page;
-        this.container = page.locator(".modal-content");
-        this.title = page.locator("#example-modal-sizes-title-lg");
-        this.rows = page.locator(".modal-body tbody tr");
+        super(page);
     }
 
     public Map<String, String> submittedValues() {
         Map<String, String> values = new LinkedHashMap<>();
         for (Locator row : rows.all()) {
             Locator cells = row.locator("td");
-            values.put(cells.nth(0).innerText().trim(), cells.nth(1).innerText().trim());
+            values.put(cells.first().innerText().trim(), cells.nth(1).innerText().trim());
         }
         return values;
     }

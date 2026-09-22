@@ -100,17 +100,17 @@ public class PracticeFormPage extends BasePage {
     }
 
     private void selectSubject(String subject) {
-        subjectsInput.fill(subject);
+        subjectsInput.pressSequentially(subject);
         option(subjectsContainer, subject).click();
     }
 
     private void selectStateAndCity(Student student) {
         stateContainer.click();
-        stateInput.fill(student.state());
+        stateInput.pressSequentially(student.state());
         option(stateContainer, student.state()).click();
 
         cityContainer.click();
-        cityInput.fill(student.city());
+        cityInput.pressSequentially(student.city());
         option(cityContainer, student.city()).click();
     }
 

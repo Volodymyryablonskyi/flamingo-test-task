@@ -21,7 +21,7 @@ import static com.flamingo.qa.http.response.StatusCode.STATUS_200_OK;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Feature("Booking search")
-@DisplayName("GET /booking?firstname=&lastname=")
+@DisplayName("Booking search by guest name")
 class BookingSearchTest extends BaseRestTest {
 
     private static final String CASES = "testdata/guest-name-cases.json";

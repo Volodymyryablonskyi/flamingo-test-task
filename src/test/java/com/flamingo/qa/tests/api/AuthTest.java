@@ -17,7 +17,7 @@ import static com.flamingo.qa.http.response.StatusCode.STATUS_200_OK;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Feature("Authentication")
-@DisplayName("POST /auth")
+@DisplayName("Auth token issuance")
 class AuthTest extends BaseRestTest {
 
     private final AuthApiClient authClient = new AuthApiClient();

@@ -32,7 +32,7 @@ public final class ResourceReader {
         InputStream stream = ResourceReader.class.getClassLoader().getResourceAsStream(resourcePath);
         if (stream == null) {
             throw new ConfigurationException(
-                    "Classpath resource '" + resourcePath + "' was not found under src/test/resources.");
+                    "Classpath resource '" + resourcePath + "' was not found on the classpath.");
         }
         return stream;
     }

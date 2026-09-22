@@ -1,12 +1,14 @@
 package com.flamingo.qa.ui;
 
 import com.flamingo.qa.config.Config;
+import com.flamingo.qa.util.CustomLogger;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Playwright;
-import com.flamingo.qa.util.CustomLogger;
+import com.microsoft.playwright.Route;
 
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -19,6 +21,14 @@ public final class BrowserFactory {
 
     private static final Set<Playwright> CREATED = ConcurrentHashMap.newKeySet();
 
+    private static final List<String> THIRD_PARTY_NOISE = List.of(
+            "**/*googlesyndication.com/**",
+            "**/*doubleclick.net/**",
+            "**/*googletagmanager.com/**",
+            "**/*google-analytics.com/**",
+            "**/*adservice.google.*/**",
+            "**/pagead/**");
+
     private BrowserFactory() {
     }
 
@@ -27,6 +37,7 @@ public final class BrowserFactory {
                 .setBaseURL(Config.uiBaseUrl())
                 .setViewportSize(Config.viewportWidth(), Config.viewportHeight()));
         context.setDefaultTimeout(Config.uiTimeout().toMillis());
+        THIRD_PARTY_NOISE.forEach(pattern -> context.route(pattern, Route::abort));
         return context;
     }
 
