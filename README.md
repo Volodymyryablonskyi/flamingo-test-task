@@ -43,10 +43,10 @@ including the published Restful Booker demo credentials.
 mvn clean test
 
 # Run only API tests (REST + GraphQL)
-mvn test -Dgroups="api"
+mvn test -Dgroups=api
 
 # Run only UI tests
-mvn test -Dgroups="ui"
+mvn test -Dgroups=ui
 ```
 
 Run a single class or a single test:
