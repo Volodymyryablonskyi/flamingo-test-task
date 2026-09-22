@@ -169,3 +169,44 @@ src/test/resources/
 on demand. API and UI run as separate parallel jobs; Allure results, Surefire reports, screenshots
 and traces upload as artifacts, and a third job publishes the merged Allure report to GitHub Pages.
 The workflow needs no secrets.
+## Test Strategy
+
+Three layers, covered by risk rather than by count: REST CRUD and auth, GraphQL queries and error
+contracts, and the two most stateful DemoQA pages.
+
+- **Negative paths carry equal weight.** Several tests exist to pin down documented oddities —
+  Restful Booker answers a bad login with `200 OK` and a body, and an incomplete payload with `500`,
+  not `400`. A suite that only asserts happy paths would hide both.
+- **Every test owns its data.** Tests seed what they need and delete it afterwards, so the suite is
+  re-runnable and order-independent against shared public services.
+- **Parallel by class, capped at 4.** Most of the wall-clock win (~89 s of work in ~29 s) while
+  intra-class ordering stays trivially safe and the public demo services are not overloaded.
+- **Deterministic waits only.** Playwright auto-waits and web-first assertions; no `Thread.sleep`
+  outside the retry backoff.
+- **Selectable slices.** Tags (`smoke`, `api`, `graphql`, `ui`, `regression`) drive both local runs
+  and the CI matrix.
+
+## Challenges & Solutions
+
+- **A flaky subject picker.** `fill()` on DemoQA's react-select input was silently swallowed when
+  React re-rendered right after the datepicker closed — the value reset to empty, the dropdown never
+  opened, and the test burned a 15 s timeout. A failure screenshot showed the field blank with every
+  earlier field populated. Fixed with `pressSequentially()`, which sends real keystrokes; verified
+  over five consecutive green suite runs.
+- **Third-party flakiness.** The public services return sporadic `500`s. `TransientFailureRetry`
+  retries 5xx, 429 and transport errors with exponential backoff — a clean run of this suite
+  absorbed two of them with no test affected.
+- **Someone else's outage is not our failure.** `ServiceHealthExtension` probes each system once per
+  run and skips its tests with a reason instead of reporting a red build.
+- **Ad-heavy pages.** DemoQA's ad and analytics requests are aborted at the browser-context level,
+  which cuts main-thread contention and run time.
+- **Parallel execution vs shared state.** `ThreadLocal` browser contexts and pages, per-instance
+  cleanup queues, a token cache behind double-checked locking, and UUID-suffixed generated data.
+
+## What I Would Add With More Time
+
+- Restrict retries to idempotent methods — a retried `POST /booking` could duplicate a record.
+- A timeout guard on UI tests: a frozen browser can outlive Playwright's own timeout.
+- JSON-schema validation of REST responses, to catch contract drift the field assertions miss.
+- A containerised or mocked system under test, removing the dependency on public demo services.
+- Flake detection in CI — scheduled repeat runs with history-based reporting.
